@@ -2,6 +2,8 @@ from django.db import models
 
 from django.contrib.postgres.functions import RandomUUID
 from django.utils import timezone
+from django.utils.translation import gettext as _
+
 
 class Ship(models.Model):
     id = models.UUIDField(primary_key=True, default=RandomUUID)
@@ -51,3 +53,35 @@ class Cabin(models.Model):
                 name='unique_ship_number'
             ),
         ]
+
+class CabinMap(models.Model):
+    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    ship = models.ForeignKey(Ship, on_delete=models.RESTRICT, null=False)
+    version = models.IntegerField(null=False)
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Draft")
+        ACTIVE = "active", _("Active")
+        ARCHIVED = "archived", _("Archived")
+
+    status = models.CharField(default='draft', max_length=8, choices=Status.choices, null=False)
+
+    svg_url = models.TextField()
+    raster_url = models.TextField()
+    notes = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now, null=False)
+    updated_at = models.DateTimeField(default=timezone.now, null=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ship', 'version'],
+                name='unique_ship_version'
+            ),
+        ]
+
+class CabinMapZone(models.Model):
+    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    map = models.ForeignKey(CabinMap, on_delete=models.CASCADE, null=False)
+    cabin = models.ForeignKey(Cabin, on_delete=models.RESTRICT, null=False)
+    polygon = models.JSONField(null=False)
