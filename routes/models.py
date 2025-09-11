@@ -1,17 +1,17 @@
 from django.db import models
-
+from django.db.models.functions import Now
 from django.contrib.postgres.functions import RandomUUID
 from django.utils import timezone
 
 class Route(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
     name = models.TextField()
     notes = models.TextField()
-    created_at = models.DateTimeField(default=timezone.now, null=False)
-    updated_at = models.DateTimeField(default=timezone.now, null=False)
+    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
+    updated_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
 
 class RouteLeg(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
     route = models.ForeignKey(Route, on_delete=models.CASCADE, null=False)
     seq = models.IntegerField(null=False)
     place_id = models.TextField(null=False)

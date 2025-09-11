@@ -1,19 +1,18 @@
 from django.db import models
-
+from django.db.models.functions import Now
 from django.contrib.postgres.functions import RandomUUID
 from django.utils import timezone
-from django.utils.translation import gettext as _
-
+from django.utils.translation import gettext_lazy as _
 
 class Ship(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
     name = models.TextField(unique=True, null=False)
     operator = models.TextField()
     contact_person = models.TextField()
     address = models.JSONField()
-    is_archived = models.BooleanField(default=False, null=False)
-    created_at = models.DateTimeField(default=timezone.now, null=False)
-    updated_at = models.DateTimeField(default=timezone.now, null=False)
+    is_archived = models.BooleanField(default=False, db_default=False, null=False)
+    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
+    updated_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
 
     amenities = models.ManyToManyField('catalogs.Amenity', related_name='ship_amenities', through='ShipAmenity')
 
@@ -36,15 +35,15 @@ class ShipAmenity(models.Model):
     pk = models.CompositePrimaryKey("ship_id", "amenity_id")
 
 class Cabin(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
     ship = models.ForeignKey(Ship, on_delete=models.RESTRICT, null=False)
     name = models.TextField(null=False)
     number = models.TextField(null=False)
     deck = models.TextField()
     category = models.ForeignKey('catalogs.CabinCategory', on_delete=models.RESTRICT, null=False)
-    is_archived = models.BooleanField(default=False, null=False)
-    created_at = models.DateTimeField(default=timezone.now, null=False)
-    updated_at = models.DateTimeField(default=timezone.now, null=False)
+    is_archived = models.BooleanField(default=False, db_default=False, null=False)
+    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
+    updated_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
 
     class Meta:
         constraints = [
@@ -55,7 +54,7 @@ class Cabin(models.Model):
         ]
 
 class CabinMap(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
     ship = models.ForeignKey(Ship, on_delete=models.RESTRICT, null=False)
     version = models.IntegerField(null=False)
 
@@ -64,13 +63,13 @@ class CabinMap(models.Model):
         ACTIVE = "active", _("Active")
         ARCHIVED = "archived", _("Archived")
 
-    status = models.CharField(default='draft', max_length=8, choices=Status.choices, null=False)
+    status = models.CharField(default='draft', db_default='draft', max_length=8, choices=Status.choices, null=False)
 
     svg_url = models.TextField()
     raster_url = models.TextField()
     notes = models.TextField()
-    created_at = models.DateTimeField(default=timezone.now, null=False)
-    updated_at = models.DateTimeField(default=timezone.now, null=False)
+    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
+    updated_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
 
     class Meta:
         constraints = [
@@ -81,7 +80,7 @@ class CabinMap(models.Model):
         ]
 
 class CabinMapZone(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID)
+    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
     map = models.ForeignKey(CabinMap, on_delete=models.CASCADE, null=False)
     cabin = models.ForeignKey(Cabin, on_delete=models.RESTRICT, null=False)
     polygon = models.JSONField(null=False)
