@@ -25,7 +25,7 @@ class ShipCurrency(models.Model):
         constraints = [
             models.CheckConstraint(
                 check=models.Q(currency__regex=r'^[A-Z]{3}$'),
-                name='currency_format_check'
+                name='ship_currency_format_check'
             )
         ]
 
@@ -63,7 +63,8 @@ class CabinMap(models.Model):
         ACTIVE = "active", _("Active")
         ARCHIVED = "archived", _("Archived")
 
-    status = models.CharField(default='draft', db_default='draft', max_length=8, choices=Status.choices, null=False)
+    status = models.CharField(default=Status.DRAFT, db_default=Status.DRAFT,
+                              max_length=8, choices=Status.choices, null=False)
 
     svg_url = models.TextField()
     raster_url = models.TextField()

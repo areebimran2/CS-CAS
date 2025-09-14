@@ -2,7 +2,6 @@ from django.db import models
 from django.db.models.functions import Now
 from django.contrib.postgres.functions import RandomUUID
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 
 class Season(models.Model):
     id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
