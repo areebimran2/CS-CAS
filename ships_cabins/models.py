@@ -65,7 +65,6 @@ class CabinMap(models.Model):
 
     status = models.CharField(default=Status.DRAFT, db_default=Status.DRAFT,
                               max_length=8, choices=Status.choices, null=False)
-
     svg_url = models.TextField()
     raster_url = models.TextField()
     notes = models.TextField()

@@ -71,10 +71,8 @@ class CustomCost(models.Model):
         PER_PAX = "per_pax", _("Per Pax")
 
     applies_to = models.CharField(max_length=9, choices=Mode.choices, null=False)
-
     is_active = models.BooleanField(default=True, db_default=True, null=False)
     created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
-
     ships = models.ManyToManyField('ships_cabins.Ship', related_name='ship_custom_costs', through='ShipCustomCost')
 
 class ShipCustomCost(models.Model):
