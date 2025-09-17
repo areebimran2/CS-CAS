@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ('common', '0001_pg_enumerated_types'),
         ('routes', '0002_alter_route_created_at_alter_route_id_and_more'),
         ('ships_cabins', '0003_alter_cabin_created_at_alter_cabin_id_and_more'),
     ]

@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ('common', '0001_pg_enumerated_types'),
         ('seasons_sailings', '0001_initial'),
         ('ships_cabins', '0004_remove_shipcurrency_currency_format_check_and_more'),
     ]
