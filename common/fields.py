@@ -1,6 +1,12 @@
 from django.db import models
 
 class PostgresEnumField(models.Field):
+    """
+    A custom Django model field to represent a Postgres ENUM type.
+
+    Django does not have built-in support for native DB ENUM types. Hence,
+    this custom field facilitates the translation between Django and Postgres ENUMs.
+    """
     description = "Postgres ENUM field"
 
     def __init__(self, enum_type, choices=None, **kwargs):

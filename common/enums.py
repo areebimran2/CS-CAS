@@ -1,15 +1,17 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
+# -- User & security
 class UserStatus(models.TextChoices):
     ACTIVE = "active", _("Active")
     SUSPENDED = "suspended", _("Suspended")
 
+# -- Map / Content lifecycle
 class MapStatus(models.TextChoices):
     DRAFT = "draft", _("Draft")
     ACTIVE = "active", _("Active")
     ARCHIVED = "archived", _("Archived")
 
+# -- Selling life cycles
 class HoldStatus(models.TextChoices):
     ACTIVE = "active", _("Active")
     RELEASED = "released", _("Released")
@@ -20,6 +22,7 @@ class BookingStatus(models.TextChoices):
     ACTIVE = "active", _("Active")
     CANCELLED = "cancelled", _("Cancelled")
 
+# -- Discounts & channels
 class DiscountKind(models.TextChoices):
     PERCENT = "percent", _("Percent")
     FIXED = "fixed", _("Fixed")
@@ -35,12 +38,13 @@ class SalesChannel(models.TextChoices):
     B2C = "b2c", _("B2C")
     BOTH = "both", _("Both")
 
+# -- Costs & cancellation
 class CustomCostMode(models.TextChoices):
     FIXED = "fixed", _("Fixed")
     PERCENT = "percent", _("Percent")
 
 class CustomCostAppliesTo(models.TextChoices):
-    PER_CABIM = "per_cabin", _("Per Cabin")
+    PER_CABIN = "per_cabin", _("Per Cabin")
     PER_PAX = "per_pax", _("Per Pax")
 
 class CancellationChargeType(models.TextChoices):

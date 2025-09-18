@@ -1,3 +1,4 @@
 Django==5.2.6
 psycopg==3.2.10
 psycopg-binary==3.2.10
+django-pgtrigger==4.15.4
