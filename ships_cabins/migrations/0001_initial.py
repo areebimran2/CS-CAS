@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('common', '0001_pg_enumerated_types'),
+        ('common', '0002_enable_extensions'),
         ('catalogs', '0001_initial'),
     ]
 

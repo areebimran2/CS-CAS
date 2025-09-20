@@ -2,9 +2,11 @@
 
 from django.db import migrations
 
-# This migration creates PostgreSQL enumerated types used in the application.
-# It is Postgres specific and will need adjustments for other databases.
 class Migration(migrations.Migration):
+    """
+    This migration creates PostgreSQL enumerated types used in the application.
+    It is Postgres specific and will need adjustments for other databases.
+    """
 
     dependencies = [
     ]
