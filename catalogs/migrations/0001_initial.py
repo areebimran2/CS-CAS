@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('common', '0001_pg_enumerated_types')
+        ('common', '0001_pg_enumerated_types'),
     ]
 
     operations = [

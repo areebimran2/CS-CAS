@@ -1,28 +1,37 @@
 from django.db import models
-from django.db.models.functions import Now
 from django.contrib.postgres.functions import RandomUUID
-from django.utils import timezone
+
+from common.functions import TxNow
+from common.triggers import set_updated_at_trg
 
 class Route(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    name = models.TextField()
-    notes = models.TextField()
-    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
-    updated_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
+    name = models.TextField(null=True)
+    notes = models.TextField(null=True)
+    created_at = models.DateTimeField(db_default=TxNow(), null=False)
+    updated_at = models.DateTimeField(db_default=TxNow(), null=False)
+
+    class Meta:
+        db_table = 'routes'
+        triggers = [
+            set_updated_at_trg('trg_routes_updated'),
+        ]
 
 class RouteLeg(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    route = models.ForeignKey(Route, on_delete=models.CASCADE, null=False)
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
     seq = models.IntegerField(null=False)
     place_id = models.TextField(null=False)
     lat = models.DecimalField(max_digits=9, decimal_places=6, null=False)
     lng = models.DecimalField(max_digits=9, decimal_places=6, null=False)
-    tz = models.TextField()
+    tz = models.TextField(null=True)
+
+    route = models.ForeignKey(Route, on_delete=models.CASCADE, null=False, db_index=False)
 
     class Meta:
+        db_table = 'route_legs'
         constraints = [
             models.UniqueConstraint(
                 fields=['route', 'seq'],
-                name='unique_route_seq'
+                name='route_legs_route_id_seq_key'
             ),
         ]

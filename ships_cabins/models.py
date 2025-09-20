@@ -105,9 +105,10 @@ class CabinMap(models.Model):
 
 class CabinMapZone(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
+    polygon = models.JSONField(null=False)
+
     map = models.ForeignKey(CabinMap, on_delete=models.CASCADE, null=False, db_index=False)
     cabin = models.ForeignKey(Cabin, on_delete=models.RESTRICT, null=False, db_index=False)
-    polygon = models.JSONField(null=False)
 
     class Meta:
         db_table = 'cabin_zones'
