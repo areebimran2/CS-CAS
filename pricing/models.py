@@ -1,99 +1,116 @@
 from django.db import models
-from django.db.models.functions import Now
 from django.contrib.postgres.functions import RandomUUID
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+
+from common.enums import CustomCostMode, CustomCostAppliesTo
+from common.fields import PostgresEnumField
+from common.functions import TxNow
+from common.triggers import set_updated_at_trg
 
 class SeasonShipCost(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    season = models.ForeignKey('seasons_sailings.Season', on_delete=models.CASCADE, null=False)
-    ship = models.ForeignKey('ships_cabins.Ship', on_delete=models.CASCADE, null=False)
-    category = models.ForeignKey('catalogs.CabinCategory', on_delete=models.SET_NULL, null=True)
-    deck = models.TextField()
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
+    deck = models.TextField(null=True)
     base_per_pax = models.DecimalField(max_digits=12, decimal_places=4, null=False)
     currency = models.CharField(max_length=3, null=False)
-    single_multiplier = models.DecimalField(max_digits=6, decimal_places=4, default=1.50, db_default=1.50, null=False)
+    single_multiplier = models.DecimalField(max_digits=6, decimal_places=4, db_default=1.50, null=False)
+    created_at = models.DateTimeField(db_default=TxNow(), null=False)
+
+    season = models.ForeignKey('seasons_sailings.Season', on_delete=models.CASCADE, null=False, db_index=False)
+    ship = models.ForeignKey('ships_cabins.Ship', on_delete=models.CASCADE, null=False, db_index=False)
+    category = models.ForeignKey('catalogs.CabinCategory', on_delete=models.SET_NULL, null=True, db_index=False)
     # created_by = models.ForeignKey('myadmin.User')
-    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
 
     class Meta:
+        db_table = 'season_ship_costs'
         constraints = [
             models.CheckConstraint(
                 check=models.Q(currency__regex=r'^[A-Z]{3}$'),
-                name='ship_cost_currency_format_check'
+                name='season_ship_costs_currency_check'
             ),
             models.CheckConstraint(
-                check=models.Q(single_multiplier__gte=1.0),
-                name='ship_cost_multiplier_validity_check'
+                check=models.Q(single_multiplier__gte=models.Value(1.0)),
+                name='season_ship_costs_single_multiplier_check'
             )
+        ]
+        indexes = [
+            models.Index(fields=['season', 'ship', 'category'], name='idx_ssc_lookup'),
         ]
 
 class CabinCostOverride(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False)
-    cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False)
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
     base_per_pax = models.DecimalField(max_digits=12, decimal_places=4, null=False)
     currency = models.CharField(max_length=3, null=False)
-    single_multiplier = models.DecimalField(max_digits=6, decimal_places=4, default=1.50, db_default=1.50, null=False)
-    notes = models.TextField()
+    single_multiplier = models.DecimalField(max_digits=6, decimal_places=4, db_default=1.50, null=False)
+    notes = models.TextField(null=True)
+    updated_at = models.DateTimeField(db_default=TxNow(), null=False)
+
+    sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
+    cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
     # updated_by = models.ForeignKey('myadmin.User')
-    updated_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
 
     class Meta:
+        db_table = 'cabin_cost_overrides'
         constraints = [
             models.CheckConstraint(
                 check=models.Q(currency__regex=r'^[A-Z]{3}$'),
-                name='override_currency_format_check'
+                name='cabin_cost_overrides_currency_check'
             ),
             models.CheckConstraint(
-                check=models.Q(single_multiplier__gte=1.0),
-                name='override_single_multiplier_validity_check'
+                check=models.Q(single_multiplier__gte=models.Value(1.0)),
+                name='cabin_cost_overrides_single_multiplier_check'
             ),
             models.UniqueConstraint(
                 fields=['sailing', 'cabin'],
-                name='unique_sailing_cabin'
+                name='cabin_cost_overrides_sailing_id_cabin_id_key'
             )
+        ]
+        triggers = [
+            set_updated_at_trg('trg_cabin_cost_ovr_updated'),
         ]
 
 class CustomCost(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    key = models.TextField(unique=True, null=False)
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
+    key = models.TextField(null=False)
     label = models.TextField(null=False)
+    mode = PostgresEnumField('custom_cost_mode', choices=CustomCostMode.choices, null=False)
+    applies_to = PostgresEnumField('custom_cost_applies_to', choices=CustomCostAppliesTo.choices, null=False)
+    is_active = models.BooleanField(db_default=True, null=False)
+    created_at = models.DateTimeField(db_default=TxNow(), null=False)
 
-    class Mode(models.TextChoices):
-        FIXED = "fixed", _("Fixed")
-        PERCENT = "percent", _("Percent")
-
-    status = models.CharField(max_length=7, choices=Mode.choices, null=False)
-
-    class AppliesTo(models.TextChoices):
-        PER_CABIN = "per_cabin", _("Per Cabin")
-        PER_PAX = "per_pax", _("Per Pax")
-
-    applies_to = models.CharField(max_length=9, choices=Mode.choices, null=False)
-    is_active = models.BooleanField(default=True, db_default=True, null=False)
-    created_at = models.DateTimeField(default=timezone.now, db_default=Now(), null=False)
     ships = models.ManyToManyField('ships_cabins.Ship', related_name='ship_custom_costs', through='ShipCustomCost')
 
+    class Meta:
+        db_table = 'custom_costs'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['key'],
+                name='custom_costs_key_key'
+            )
+        ]
+
 class ShipCustomCost(models.Model):
-    ship = models.ForeignKey('ships_cabins.Ship', on_delete=models.CASCADE, null=False)
-    custom_cost = models.ForeignKey(CustomCost, on_delete=models.CASCADE, null=False)
-    pk = models.CompositePrimaryKey("ship_id", "custom_cost_id")
+    ship = models.ForeignKey('ships_cabins.Ship', on_delete=models.CASCADE, null=False, db_index=False)
+    custom_cost = models.ForeignKey(CustomCost, on_delete=models.CASCADE, null=False, db_index=False)
+    pk = models.CompositePrimaryKey('ship_id', 'custom_cost_id')
+
+    class Meta:
+        db_table = 'ship_custom_costs'
 
 class CabinCostCustom(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False)
-    cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False)
-    custom_cost = models.ForeignKey(CustomCost, on_delete=models.RESTRICT, null=False)
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
     value = models.DecimalField(max_digits=12, decimal_places=4)
     percent = models.DecimalField(max_digits=6, decimal_places=4)
     currency = models.CharField(max_length=3)
 
+    sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
+    cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
+    custom_cost = models.ForeignKey(CustomCost, on_delete=models.RESTRICT, null=False, db_index=False)
+
     class Meta:
+        db_table = 'cabin_cost_customs'
         constraints = [
             models.CheckConstraint(
                 check=models.Q(currency__regex=r'^[A-Z]{3}$'),
-                name='cabin_cost_format_check'
+                name='cabin_cost_customs_currency_check'
             ),
             models.CheckConstraint(
                 check=(models.Q(value__isnull=False) & models.Q(percent__isnull=True)) |
@@ -102,6 +119,6 @@ class CabinCostCustom(models.Model):
             ),
             models.UniqueConstraint(
                 fields=['sailing', 'cabin', 'custom_cost'],
-                name='unique_sailing_cabin_custom_cost'
+                name='cabin_cost_customs_sailing_id_cabin_id_custom_cost_id_key'
             )
         ]

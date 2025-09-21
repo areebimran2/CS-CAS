@@ -16,7 +16,6 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('common', '0002_enable_extensions'),
         ('routes', '0001_initial'),
         ('ships_cabins', '0001_initial'),
     ]

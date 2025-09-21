@@ -14,7 +14,6 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('common', '0002_enable_extensions'),
         ('catalogs', '0001_initial'),
     ]
 
