@@ -17,8 +17,9 @@ class Discount(models.Model):
     min_margin_b2b = models.DecimalField(max_digits=6, decimal_places=4, db_default=0.05, null=False)
     min_margin_b2c = models.DecimalField(max_digits=6, decimal_places=4, db_default=0.10, null=False)
     status = PostgresEnumField('discount_status', db_default=DiscountStatus.SCHEDULED, choices=DiscountStatus.choices, null=False)
-    # created_by = models.ForeignKey('myadmin.User')
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
+
+    # created_by = models.ForeignKey('myadmin.User')
 
     class Meta:
         db_table = 'discounts'

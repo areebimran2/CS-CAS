@@ -43,9 +43,9 @@ class CabinCostOverride(models.Model):
     notes = models.TextField(null=True)
     updated_at = models.DateTimeField(db_default=TxNow(), null=False)
 
+    # updated_by = models.ForeignKey('myadmin.User')
     sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
     cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
-    # updated_by = models.ForeignKey('myadmin.User')
 
     class Meta:
         db_table = 'cabin_cost_overrides'
