@@ -41,13 +41,14 @@ INSTALLED_APPS = [
     'common',
     'myadmin',
     'myauth',
+    'catalogs',
+    'ships_cabins',
     'routes',
     'seasons_sailings',
     'pricing',
-    'selling',
     'discounts',
-    'catalogs',
-    'ships_cabins',
+    'selling',
+    'reports',
 ]
 
 MIDDLEWARE = [
