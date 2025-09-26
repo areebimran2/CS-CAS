@@ -12,7 +12,7 @@ class AuditLog(models.Model):
     after = models.JSONField(null=True)
     ts = models.DateTimeField(db_default=TxNow(), null=False)
 
-    # actor = models.ForeignKey('myadmin.User', on_delete=models.SET_NULL, null=True, db_index=False)
+    actor = models.ForeignKey('myadmin.User', on_delete=models.SET_NULL, null=True, db_index=False)
 
     class Meta:
         db_table = 'audit_log'

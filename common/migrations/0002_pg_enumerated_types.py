@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
+        ('common', '0001_enable_extensions'),
     ]
 
     operations = [

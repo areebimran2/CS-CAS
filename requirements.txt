@@ -2,3 +2,5 @@ Django==5.2.6
 psycopg==3.2.10
 psycopg-binary==3.2.10
 django-pgtrigger==4.15.4
+django-phonenumber-field==8.1.0
+phonenumbers==9.0.14

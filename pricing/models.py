@@ -17,7 +17,9 @@ class SeasonShipCost(models.Model):
     season = models.ForeignKey('seasons_sailings.Season', on_delete=models.CASCADE, null=False, db_index=False)
     ship = models.ForeignKey('ships_cabins.Ship', on_delete=models.CASCADE, null=False, db_index=False)
     category = models.ForeignKey('catalogs.CabinCategory', on_delete=models.SET_NULL, null=True, db_index=False)
-    # created_by = models.ForeignKey('myadmin.User')
+
+    created_by = models.ForeignKey('myadmin.User', on_delete=models.DO_NOTHING, null=True,
+                                   db_index=False, db_column='created_by')
 
     class Meta:
         db_table = 'season_ship_costs'
@@ -43,7 +45,8 @@ class CabinCostOverride(models.Model):
     notes = models.TextField(null=True)
     updated_at = models.DateTimeField(db_default=TxNow(), null=False)
 
-    # updated_by = models.ForeignKey('myadmin.User')
+    updated_by = models.ForeignKey('myadmin.User', on_delete=models.DO_NOTHING, null=True,
+                                   db_index=False, db_column='updated_by')
     sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
     cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
 

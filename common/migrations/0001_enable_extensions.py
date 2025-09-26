@@ -8,11 +8,21 @@ class Migration(migrations.Migration):
     """Prerequisites & Extensions"""
 
     dependencies = [
-        ('common', '0001_pg_enumerated_types'),
     ]
 
     operations = [
         CryptoExtension(),     # -- gen_random_uuid()
-        CITextExtension(),     # -- case-insensitive email
+        migrations.RunSQL(     # -- case-insensitive email using collation (citext obsolete)
+            """
+            CREATE COLLATION IF NOT EXISTS case_insensitive (
+                provider = icu,
+                locale = 'und-u-ks-level2',
+                deterministic = false
+            );
+            """,
+            reverse_sql="""
+            DROP COLLATION IF EXISTS case_insensitive;
+            """
+        ),
         BtreeGistExtension(),  # -- EXCLUDE (uuid WITH =) + ranges
     ]
