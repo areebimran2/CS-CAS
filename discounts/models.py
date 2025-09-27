@@ -19,7 +19,7 @@ class Discount(models.Model):
     status = PostgresEnumField('discount_status', db_default=DiscountStatus.SCHEDULED, choices=DiscountStatus.choices, null=False)
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
 
-    created_by = models.ForeignKey('myadmin.User', on_delete=models.DO_NOTHING, null=True,
+    created_by = models.ForeignKey('myauth.User', on_delete=models.DO_NOTHING, null=True,
                                    db_index=False, db_column='created_by')
 
     class Meta:

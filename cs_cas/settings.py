@@ -118,7 +118,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = 'myadmin.User'
+AUTH_USER_MODEL = 'myauth.User'
 
 
 # Internationalization

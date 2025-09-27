@@ -16,7 +16,7 @@ class ReserveSetting(models.Model):
     extension_minutes = models.IntegerField(db_default=1440, null=False)
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
 
-    created_by = models.ForeignKey('myadmin.User', on_delete=models.DO_NOTHING, null=True,
+    created_by = models.ForeignKey('myauth.User', on_delete=models.DO_NOTHING, null=True,
                                    db_index=False, db_column='created_by')
 
     class Meta:
@@ -31,7 +31,7 @@ class Hold(models.Model):
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
     updated_at = models.DateTimeField(db_default=TxNow(), null=False)
 
-    user = models.ForeignKey('myadmin.User', on_delete=models.RESTRICT, null=False, db_index=False)
+    user = models.ForeignKey('myauth.User', on_delete=models.RESTRICT, null=False, db_index=False)
     sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
     cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
 
@@ -61,7 +61,7 @@ class ReleaseRequest(models.Model):
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
 
     hold = models.ForeignKey(Hold, on_delete=models.CASCADE, null=False, db_index=False)
-    requested_by = models.ForeignKey('myadmin.User', on_delete=models.RESTRICT, null=False,
+    requested_by = models.ForeignKey('myauth.User', on_delete=models.RESTRICT, null=False,
                                      db_index=False, db_column='requested_by')
 
     class Meta:
@@ -78,7 +78,7 @@ class Booking(models.Model):
 
     sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
     cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
-    user = models.ForeignKey('myadmin.User', on_delete=models.RESTRICT, null=False, db_index=False)
+    user = models.ForeignKey('myauth.User', on_delete=models.RESTRICT, null=False, db_index=False)
 
     class Meta:
         db_table = 'bookings'
