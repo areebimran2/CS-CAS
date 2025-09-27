@@ -12,8 +12,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        # Should be depending on FX & Prefs migrations
-        ('selling', '0001_initial'),
+        ('fx', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

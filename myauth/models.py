@@ -86,3 +86,18 @@ class User(AbstractUser):
             self.status = UserStatus.ACTIVE
         else:
             self.status = UserStatus.SUSPENDED
+
+class UserPreference(models.Model):
+    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
+    fx_mode = models.TextField(db_default='manual', choices=[('manual', 'Manual'), ('live', 'Live')], null=False)
+    notify_cabin_avail = models.BooleanField(db_default=True, null=False)
+    notify_flash_sale = models.BooleanField(db_default=True, null=False)
+
+    class Meta:
+        db_table = 'user_prefs'
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(fx_mode__in=['manual', 'live']),
+                name='user_prefs2_fx_mode_check',
+            )
+        ]
