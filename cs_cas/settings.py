@@ -119,6 +119,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Use Argon2 as the default storage algorithm for passwords
+# https://docs.djangoproject.com/en/5.2/topics/auth/passwords/
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
+
 AUTH_USER_MODEL = 'myauth.User'
 
 
