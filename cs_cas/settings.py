@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+TWO_FACTOR_PATCH_ADMIN = False
 
 # Application definition
 
@@ -37,8 +38,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third-party apps
     'pgtrigger',
     'phonenumber_field',
+    'ninja_jwt',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'two_factor',
+    
+    # Local apps
     'common',
     'myadmin',
     'myauth',
@@ -59,6 +68,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -130,6 +140,7 @@ PASSWORD_HASHERS = [
 ]
 
 AUTH_USER_MODEL = 'myauth.User'
+
 
 
 # Internationalization

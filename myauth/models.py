@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import PermissionsMixin
 from django.contrib.postgres.functions import RandomUUID
 from django.utils.translation import gettext_lazy as _
 
@@ -10,12 +11,46 @@ from common.triggers import set_updated_at_trg
 
 from phonenumber_field.modelfields import PhoneNumberField
 
-class User(AbstractUser):
-    # AbstractUser fields that are not used
-    username = None
+class UserManager(BaseUserManager):
+    use_in_migrations = True
+
+    def create_user(self, email, password=None, **extra_fields):
+        """
+        Create and save a User with the given email and password.
+        """
+        if not email:
+            raise ValueError("The given email must be set")
+        email = self.normalize_email(email)
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+
+        return user
+
+    create_user.alters_data = True
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        """
+        Create and save a SuperUser with the given email and password.
+        """
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(email, password, **extra_fields)
+
+    create_superuser.alters_data = True
+
+class User(AbstractBaseUser, PermissionsMixin):
+    # AbstractBaseUser fields that are not used
     last_login = None
-    is_active = None
-    date_joined = None
 
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
 
@@ -52,6 +87,8 @@ class User(AbstractUser):
         default=False,
         help_text=_("Designates whether the user can log into this admin site."),
     )
+
+    objects = UserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
