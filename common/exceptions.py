@@ -48,8 +48,9 @@ class FXRatesStaleException(APIBaseException):
 class PermissionDeniedException(APIBaseException):
     type = "PERMISSION_DENIED"
 
-class ValidationFailedException(APIBaseException):
-    type = "VALIDATION_FAILED"
+# Unnecessary since we are overriding pydantic's ValidationError exception handler
+# class ValidationFailedException(APIBaseException):
+#     type = "VALIDATION_FAILED"
 
 class RateLimitedException(APIBaseException):
     type = "RATE_LIMITED"
@@ -64,20 +65,21 @@ class APIExceptionManager:
 
     def register_handlers(self):
         self.api.add_exception_handler(APIBaseException, self.handle_api_exception)
-        # self.api.add_exception_handler(ValidationError, self.handle_validation_errors)
+        self.api.add_exception_handler(ValidationError, self.handle_validation_errors)
 
     def handle_api_exception(self, request, exc: APIBaseException):
         error_model = ErrorModel(**exc.to_dict())
         return self.api.create_response(request, error_model, status=exc.status)
 
-    # def handle_validation_errors(self, request, exc: ValidationError):
-    #     return self.error_response(
-    #         request,
-    #         type_="VALIDATION_ERROR",
-    #         title="Validation Error",
-    #         status=422,
-    #         detail="One or more validation errors occurred.",
-    #         instance=request.path,
-    #         errors=exc.errors
-    #     )
+    def handle_validation_errors(self, request, exc: ValidationError):
+        error_model = ErrorModel(
+            type="VALIDATION_FAILED",
+            title="Validation Failed",
+            status=422,
+            detail="One or more validation errors occurred.",
+            instance=request.path,
+            errors=exc.errors
+        )
+
+        return self.api.create_response(request, error_model, status=422)
 
