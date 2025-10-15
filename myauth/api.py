@@ -12,6 +12,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router
 from ninja.errors import AuthenticationError, HttpError
 from ninja.responses import Response
+from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import RefreshToken
 from two_factor.plugins.phonenumber.models import PhoneDevice
 from two_factor.utils import default_device
@@ -63,7 +64,7 @@ def setup_tfa_totp(request, data: TFASetupIn):
     }
 
 @router.post('/2fa/totp/confirm', response=TFAConfirmOut)
-def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
+def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: Purpose = Purpose.LOGIN):
     user = get_object_or_404(User, id=data.id)
     otp = pyotp.parse_uri(data.url)
 
@@ -80,8 +81,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     device.save()
 
     # TOTP devices do not require caching the OTP hash, only attempts
-    # They are also only used for login
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose='login', id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
     cache.set(key_attempts, 0, OTP_ATTEMPT_WINDOW)
 
     return {
@@ -91,7 +91,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     }
 
 @router.post('/2fa/sms/send', response=TFAConfirmOut)
-def send_2fa_sms(request, data: TFASetupIn):
+def send_2fa_sms(request, data: TFASetupIn, purpose: Purpose = Purpose.LOGIN):
     user = get_object_or_404(User, id=data.id)
     active_device = default_device(user)
 
@@ -109,8 +109,8 @@ def send_2fa_sms(request, data: TFASetupIn):
         number=user.phone,
     )
 
-    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
 
     # Send the OTP SMS to the user's phone
     generate_cached_challenge(device, key_hash, key_attempts)
@@ -123,15 +123,15 @@ def send_2fa_sms(request, data: TFASetupIn):
 
 
 @router.post('/2fa/verify', response=TFAVerifyOut)
-def verify_2fa(request, data: TFAVerifyIn):
+def verify_2fa(request, data: TFAVerifyIn, purpose: Purpose = Purpose.LOGIN):
     user = get_object_or_404(User, id=data.id)
     device = Device.from_persistent_id(data.device_id)
 
     if device is None or device.user != user:
         raise AuthenticationError()
 
-    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
 
     otp_hash = cache.get(key_hash)
     otp_attempts = cache.get(key_attempts, 0)
@@ -163,9 +163,9 @@ def verify_2fa(request, data: TFAVerifyIn):
         'access': str(refresh.access_token),
     }
 
-@router.get('/me')
+@router.get('/me', response=UserSchema, auth=JWTAuth())
 def profile(request):
-    pass
+    return request.user
 
 @router.put('/me')
 def update_profile(request):
