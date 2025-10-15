@@ -1,20 +1,22 @@
 import base64
+import hashlib
+
 import pyotp
 import binascii
 
-from typing import Optional
+from django.core.cache import cache
 from django.contrib.auth import authenticate, get_user_model
 from django.shortcuts import get_object_or_404
-from django_otp import devices_for_user
 from django_otp.models import Device
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router
-from ninja.errors import AuthenticationError
+from ninja.errors import AuthenticationError, HttpError
 from ninja.responses import Response
-from ninja_jwt.schema import TokenObtainPairOutputSchema
-from ninja_jwt.tokens import RefreshToken, AccessToken
+from ninja_jwt.tokens import RefreshToken
 from two_factor.plugins.phonenumber.models import PhoneDevice
+from two_factor.utils import default_device
 
+from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, OTP_ATTEMPT_WINDOW
 from myauth.schemas import *
 
 router = Router()
@@ -26,22 +28,25 @@ def login(request, data: LoginIn):
     if user is None:
         AuthenticationError()
 
-    devices = list(devices_for_user(user))
+    device = default_device(user)
 
     return {
         'id': user.id,
-        'methods': devices
+        'method': device
     }
 
 @router.post('/2fa/totp/setup', response=TFASetupTOTPOut)
 def setup_tfa_totp(request, data: TFASetupIn):
     user = get_object_or_404(User, id=data.id)
-    devices = list(devices_for_user(user))
+    active_device = default_device(user)
 
-    if not user.twofa_enabled or user.twofa_method != 'totp' or len(devices) > 0:
-        # User either has 2FA disabled, or already has a device, raise an error
+    if not user.twofa_enabled or user.twofa_method != 'totp':
+        # User has 2FA disabled raise an error
         # May also want to raise an error if the user has a different 2FA method enabled
         raise AuthenticationError()
+
+    if active_device is not None:
+        raise HttpError(409, 'User already has an active 2FA device')
 
     # Generate a potential TOTP device secret
     secret = pyotp.random_base32()
@@ -74,6 +79,11 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     device.key = binascii.hexlify(secret_raw).decode('utf-8')
     device.save()
 
+    # TOTP devices do not require caching the OTP hash, only attempts
+    # They are also only used for login
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose='login', id=user.id)
+    cache.set(key_attempts, 0, OTP_ATTEMPT_WINDOW)
+
     return {
         'id': user.id,
         'device_id': device.persistent_id,
@@ -83,13 +93,15 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 @router.post('/2fa/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupIn):
     user = get_object_or_404(User, id=data.id)
-    devices = list(devices_for_user(user))
+    active_device = default_device(user)
 
-    if not user.twofa_enabled or user.twofa_method != 'sms' or len(devices) > 1:
+    if not user.twofa_enabled or user.twofa_method != 'sms':
         # User has 2FA disabled, raise an error
-        # May also want to raise an error if the user has a different 2FA method enabled or
-        # has both SMS and TOTP devices
+        # May also want to raise an error if the user has a different 2FA method enabled
         raise AuthenticationError()
+
+    if isinstance(active_device, TOTPDevice):
+        raise HttpError(409, 'User has an active TOTP device')
 
     # Create a record to maintain the User's OTP Phone Device
     device, _ = PhoneDevice.objects.get_or_create(
@@ -97,8 +109,11 @@ def send_2fa_sms(request, data: TFASetupIn):
         number=user.phone,
     )
 
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+
     # Send the OTP SMS to the user's phone
-    device.generate_challenge()
+    generate_cached_challenge(device, key_hash, key_attempts)
 
     return {
         'id': user.id,
@@ -110,13 +125,36 @@ def send_2fa_sms(request, data: TFASetupIn):
 @router.post('/2fa/verify', response=TFAVerifyOut)
 def verify_2fa(request, data: TFAVerifyIn):
     user = get_object_or_404(User, id=data.id)
-    device =  Device.from_persistent_id(data.device_id)
+    device = Device.from_persistent_id(data.device_id)
 
     if device is None or device.user != user:
         raise AuthenticationError()
 
-    if not device.verify_token(data.passcode):
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+
+    otp_hash = cache.get(key_hash)
+    otp_attempts = cache.get(key_attempts, 0)
+
+    if otp_hash is None:
         raise AuthenticationError()
+
+    if otp_attempts >= 5:
+        cache.delete_many([key_hash, key_attempts])
+        raise HttpError(429, 'Too many attempts. Please request a new code.')
+
+    hashed_input = hashlib.sha256(data.passcode.encode('utf-8')).hexdigest()
+
+    if (isinstance(device, PhoneDevice) and hashed_input != otp_hash) or not device.verify_token(data.passcode):
+        cache.set(key_attempts, otp_attempts + 1, OTP_ATTEMPT_WINDOW)
+        raise AuthenticationError()
+
+    if default_device(user) is None:
+        device.name = 'default'
+        device.save()
+
+    # Clear the cached metadata for OTP on successful verification
+    cache.delete_many([key_hash, key_attempts])
 
     refresh = RefreshToken.for_user(user)
 
@@ -125,4 +163,11 @@ def verify_2fa(request, data: TFAVerifyIn):
         'access': str(refresh.access_token),
     }
 
+@router.get('/me')
+def profile(request):
+    pass
+
+@router.put('/me')
+def update_profile(request):
+    pass
 

@@ -1,6 +1,7 @@
 from ninja import Schema
+from enum import Enum
 
-from typing import List
+from typing import Optional
 import uuid
 
 # Login endpoint schemas
@@ -20,12 +21,17 @@ class LoginIn(Schema):
 
 class LoginOut(Schema):
     id: uuid.UUID
-    methods: List[Method]
+    method: Optional[Method] = None
 
 # TFA endpoint schemas
+class Purpose(str, Enum):
+    # Add more OTP purposes as needed
+    LOGIN = 'login'
+
 
 class TFASetupIn(Schema):
     id: uuid.UUID
+    purpose: Purpose
 
 class TFAConfirmTOTPIn(Schema):
     id: uuid.UUID
@@ -45,6 +51,7 @@ class TFAVerifyIn(Schema):
     id: uuid.UUID
     device_id: str
     passcode: str
+    purpose: Purpose
 
 class TFAVerifyOut(Schema):
     access: str
