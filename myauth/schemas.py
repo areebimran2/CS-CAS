@@ -80,3 +80,9 @@ class UserSchema(ModelSchema):
     @staticmethod
     def resolve_phone(obj):
         return str(obj.phone)
+
+class UserBasicUpdateSchema(ModelSchema):
+    class Meta:
+        model = get_user_model()
+        fields = ['first_name', 'middle_name', 'last_name', 'designation']
+

@@ -9,7 +9,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.shortcuts import get_object_or_404
 from django_otp.models import Device
 from django_otp.plugins.otp_totp.models import TOTPDevice
-from ninja import Router
+from ninja import Router, PatchDict
 from ninja.errors import AuthenticationError, HttpError
 from ninja.responses import Response
 from ninja_jwt.authentication import JWTAuth
@@ -23,6 +23,7 @@ from myauth.schemas import *
 router = Router()
 User = get_user_model()
 
+
 @router.post('/login', response=LoginOut)
 def login(request, data: LoginIn):
     user: Optional[User] = authenticate(username=data.email, password=data.password)
@@ -35,6 +36,7 @@ def login(request, data: LoginIn):
         'id': user.id,
         'method': device
     }
+
 
 @router.post('/2fa/totp/setup', response=TFASetupTOTPOut)
 def setup_tfa_totp(request, data: TFASetupIn):
@@ -63,6 +65,7 @@ def setup_tfa_totp(request, data: TFASetupIn):
         'otpauth_url': otp_uri
     }
 
+
 @router.post('/2fa/totp/confirm', response=TFAConfirmOut)
 def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: Purpose = Purpose.LOGIN):
     user = get_object_or_404(User, id=data.id)
@@ -89,6 +92,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: Purpose = Purpose
         'device_id': device.persistent_id,
         'message': 'TOTP device confirmed'
     }
+
 
 @router.post('/2fa/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupIn, purpose: Purpose = Purpose.LOGIN):
@@ -163,11 +167,21 @@ def verify_2fa(request, data: TFAVerifyIn, purpose: Purpose = Purpose.LOGIN):
         'access': str(refresh.access_token),
     }
 
+
 @router.get('/me', response=UserSchema, auth=JWTAuth())
 def profile(request):
-    return request.user
+    user: User = request.auth
+    return user
 
-@router.put('/me')
-def update_profile(request):
-    pass
+
+@router.patch('/me', response=UserSchema, auth=JWTAuth())
+def update_profile(request, data: PatchDict[UserBasicUpdateSchema]):
+    user: User = request.auth
+
+    for attr, value in data.items():
+        setattr(user, attr, value)
+
+    user.save()
+
+    return user
 
