@@ -12,3 +12,4 @@ pyotp==2.9.0
 hiredis==3.3.0
 redis==6.4.0
 django-redis==6.0.0
+pydantic-extra-types==2.10.6

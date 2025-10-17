@@ -2,10 +2,14 @@ import hashlib
 import uuid
 
 from django.core.cache import cache
+from django_otp.models import Device
 from django_otp.oath import totp
+from ninja.errors import AuthenticationError, HttpError
 from two_factor.gateways import make_call, send_sms
 from two_factor.plugins.phonenumber.models import PhoneDevice
 from two_factor.utils import totp_digits
+
+from myauth.models import User
 
 # Common caching utilities
 OTP_HASH_CACHE_KEY = 'otp:{purpose}:{id}:hash'
@@ -41,3 +45,48 @@ def generate_cached_challenge(device: PhoneDevice, key_hash: str, key_attempts: 
         send_sms(device=device, token=token)
 
     return None
+
+def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -> None:
+    """
+    Verifies the provided OTP passcode against the cached hash.
+
+    :param device: The OTP Device instance
+    :param user: The User instance
+    :param purpose: The purpose string for the OTP (e.g., 'change-email')
+    :param passcode: The OTP passcode to verify
+    :return: None
+    :raises AuthenticationError: If verification fails
+    """
+    if device is None or device.user != user:
+        raise AuthenticationError()
+
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose, id=user.id)
+
+    otp_hash = cache.get(key_hash)
+    otp_attempts = cache.get(key_attempts, 0)
+
+    if otp_hash is None:
+        raise AuthenticationError()
+
+    if otp_attempts >= 5:
+        cache.delete_many([key_hash, key_attempts])
+        raise HttpError(429, 'Too many attempts. Please request a new code.')
+
+    hashed_input = hashlib.sha256(passcode.encode('utf-8')).hexdigest()
+
+    if (isinstance(device, PhoneDevice) and hashed_input != otp_hash) or not device.verify_token(passcode):
+        cache.set(key_attempts, otp_attempts + 1, OTP_ATTEMPT_WINDOW)
+        raise AuthenticationError()
+
+    # Clear the cached metadata for OTP on successful verification
+    cache.delete_many([key_hash, key_attempts])
+
+    return None
+
+# Phone change utilities
+PHONE_CHANGE_CACHE_KEY = 'phone-change:{id}'
+PHONE_CHANGE_WINDOW = 300  # 5 minutes
+
+PHONE_CHANGE_OLD_VERIFIED = 'old-verified'
+PHONE_CHANGE_NEW_AWAITING = 'new-awaiting-verification'

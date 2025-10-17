@@ -5,11 +5,10 @@ from enum import Enum
 from typing import Optional
 import uuid
 
-from phonenumber_field.modelfields import PhoneNumberField
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
 # Login endpoint schemas
-
 class Method(Schema):
     persistent_id: str
     name: str
@@ -31,11 +30,6 @@ class LoginOut(Schema):
 
 
 # TFA endpoint schemas
-class Purpose(str, Enum):
-    # Add more OTP purposes as needed
-    LOGIN = 'login'
-
-
 class TFASetupIn(Schema):
     id: uuid.UUID
 
@@ -67,10 +61,26 @@ class TFAVerifyOut(Schema):
     access: str
     refresh: str
 
+# Authenticated user OTP security schemas
+class Purpose(str, Enum):
+    # Represents purposes that correspond to secure authenticated actions
+    # Add more OTP purposes as needed
+    VERIFY_OLD_PHONE = 'verify-old-phone'
+    VERIFY_NEW_PHONE = 'verify-new-phone'
+    CHANGE_EMAIL = 'change-email'
+    CHANGE_PASSWORD = 'change-password'
+    FORGOT_PASSWORD = 'forgot-password'
+
+class SecuritySetupIn(Schema):
+    purpose: Purpose
+
+class VerifySchema(Schema):
+    passcode: str
+
+class ChangePhoneIn(Schema):
+    phone: PhoneNumber
 
 # User info endpoint schemas
-
-
 class UserSchema(ModelSchema):
     class Meta:
         model = get_user_model()
@@ -86,3 +96,6 @@ class UserBasicUpdateSchema(ModelSchema):
         model = get_user_model()
         fields = ['first_name', 'middle_name', 'last_name', 'designation']
 
+# Miscellaneous schemas
+class MessageOut(Schema):
+    message: str

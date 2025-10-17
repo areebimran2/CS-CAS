@@ -1,6 +1,4 @@
 import base64
-import hashlib
-
 import pyotp
 import binascii
 
@@ -17,12 +15,12 @@ from ninja_jwt.tokens import RefreshToken
 from two_factor.plugins.phonenumber.models import PhoneDevice
 from two_factor.utils import default_device
 
-from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, OTP_ATTEMPT_WINDOW
+from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, OTP_ATTEMPT_WINDOW, \
+    verify_cached_otp, PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW, PHONE_CHANGE_OLD_VERIFIED, PHONE_CHANGE_NEW_AWAITING
 from myauth.schemas import *
 
 router = Router()
 User = get_user_model()
-
 
 @router.post('/login', response=LoginOut)
 def login(request, data: LoginIn):
@@ -67,7 +65,7 @@ def setup_tfa_totp(request, data: TFASetupIn):
 
 
 @router.post('/2fa/totp/confirm', response=TFAConfirmOut)
-def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: Purpose = Purpose.LOGIN):
+def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: str = 'login'):
     user = get_object_or_404(User, id=data.id)
     otp = pyotp.parse_uri(data.url)
 
@@ -84,7 +82,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: Purpose = Purpose
     device.save()
 
     # TOTP devices do not require caching the OTP hash, only attempts
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose, id=user.id)
     cache.set(key_attempts, 0, OTP_ATTEMPT_WINDOW)
 
     return {
@@ -95,7 +93,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn, purpose: Purpose = Purpose
 
 
 @router.post('/2fa/sms/send', response=TFAConfirmOut)
-def send_2fa_sms(request, data: TFASetupIn, purpose: Purpose = Purpose.LOGIN):
+def send_2fa_sms(request, data: TFASetupIn, purpose: str = 'login'):
     user = get_object_or_404(User, id=data.id)
     active_device = default_device(user)
 
@@ -113,8 +111,8 @@ def send_2fa_sms(request, data: TFASetupIn, purpose: Purpose = Purpose.LOGIN):
         number=user.phone,
     )
 
-    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose.value, id=user.id)
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose, id=user.id)
 
     # Send the OTP SMS to the user's phone
     generate_cached_challenge(device, key_hash, key_attempts)
@@ -127,38 +125,15 @@ def send_2fa_sms(request, data: TFASetupIn, purpose: Purpose = Purpose.LOGIN):
 
 
 @router.post('/2fa/verify', response=TFAVerifyOut)
-def verify_2fa(request, data: TFAVerifyIn, purpose: Purpose = Purpose.LOGIN):
+def verify_2fa(request, data: TFAVerifyIn, purpose: str = 'login'):
     user = get_object_or_404(User, id=data.id)
     device = Device.from_persistent_id(data.device_id)
 
-    if device is None or device.user != user:
-        raise AuthenticationError()
-
-    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose.value, id=user.id)
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
-
-    otp_hash = cache.get(key_hash)
-    otp_attempts = cache.get(key_attempts, 0)
-
-    if otp_hash is None:
-        raise AuthenticationError()
-
-    if otp_attempts >= 5:
-        cache.delete_many([key_hash, key_attempts])
-        raise HttpError(429, 'Too many attempts. Please request a new code.')
-
-    hashed_input = hashlib.sha256(data.passcode.encode('utf-8')).hexdigest()
-
-    if (isinstance(device, PhoneDevice) and hashed_input != otp_hash) or not device.verify_token(data.passcode):
-        cache.set(key_attempts, otp_attempts + 1, OTP_ATTEMPT_WINDOW)
-        raise AuthenticationError()
+    verify_cached_otp(device, user, purpose, data.passcode)
 
     if default_device(user) is None:
         device.name = 'default'
         device.save()
-
-    # Clear the cached metadata for OTP on successful verification
-    cache.delete_many([key_hash, key_attempts])
 
     refresh = RefreshToken.for_user(user)
 
@@ -185,3 +160,95 @@ def update_profile(request, data: PatchDict[UserBasicUpdateSchema]):
 
     return user
 
+
+@router.post('/me/security/sms/send', response=MessageOut, auth=JWTAuth())
+def secure_action(request, data: SecuritySetupIn):
+    user: User = request.auth
+    device = default_device(user) # Assume that every user has SMS 2FA enabled
+
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+
+    # Send the OTP SMS to the user's phone
+    generate_cached_challenge(device, key_hash, key_attempts)
+
+    return {
+        'message': 'SMS sent to registered phone number'
+    }
+
+
+@router.post('/me/phone/verify-old', response=MessageOut, auth=JWTAuth())
+def verify_old_phone(request, data: VerifySchema, purpose: Purpose = Purpose.VERIFY_OLD_PHONE):
+    user: User = request.auth
+    device = default_device(user)
+
+    verify_cached_otp(device, user, purpose.value, data.passcode)
+
+    phone_change_key = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
+    cache.set(phone_change_key, PHONE_CHANGE_OLD_VERIFIED, PHONE_CHANGE_WINDOW)
+
+    return {
+        'message': 'Old phone number verified'
+    }
+
+@router.patch('/me/phone/change', response=MessageOut, auth=JWTAuth())
+def change_phone(request, data: ChangePhoneIn, purpose: Purpose = Purpose.VERIFY_NEW_PHONE):
+    user: User = request.auth
+
+    phone_change_key = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
+    if cache.get(phone_change_key) != PHONE_CHANGE_OLD_VERIFIED:
+        raise HttpError(400, 'Old phone number not verified')
+
+    temp_device = PhoneDevice(
+        user=user,
+        number=data.phone,
+    )
+
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=user.id)
+
+    generate_cached_challenge(temp_device, key_hash, key_attempts)
+
+    cache.set(phone_change_key, {
+        'status': PHONE_CHANGE_NEW_AWAITING,
+        'device_key': temp_device.key,
+        'number': data.phone,
+    }, PHONE_CHANGE_WINDOW)
+
+    return {
+        'message': 'OTP sent to new phone number'
+    }
+
+
+
+@router.post('/me/phone/verify-new', response=MessageOut, auth=JWTAuth())
+def verify_new_phone(request, data: VerifySchema, purpose: Purpose = Purpose.VERIFY_NEW_PHONE):
+    user: User = request.auth
+    device = default_device(user)
+
+    phone_change_key = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
+    phone_change = cache.get(phone_change_key)
+
+    if phone_change['status'] != PHONE_CHANGE_NEW_AWAITING:
+        raise HttpError(400, 'New phone number change not initiated or old phone not verified')
+
+    temp_device = PhoneDevice(
+        key=phone_change['device_key'],
+        user=user,
+        number=phone_change['number'],
+    )
+
+    verify_cached_otp(temp_device, user, purpose.value, data.passcode)
+
+    # Clear the phone change cache key after successful verification
+    cache.delete(phone_change_key)
+
+    user.phone = phone_change['number']
+    device.number = phone_change['number']
+
+    user.save()
+    device.save()
+
+    return {
+        'message': 'New phone number verified, phone number updated'
+    }
