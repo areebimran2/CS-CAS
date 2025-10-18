@@ -1,5 +1,4 @@
 import hashlib
-import uuid
 
 from django.core.cache import cache
 from django_otp.models import Device
@@ -66,7 +65,7 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -
     otp_hash = cache.get(key_hash)
     otp_attempts = cache.get(key_attempts, 0)
 
-    if otp_hash is None:
+    if isinstance(device, PhoneDevice) and otp_hash is None:
         raise AuthenticationError()
 
     if otp_attempts >= 5:
@@ -90,3 +89,7 @@ PHONE_CHANGE_WINDOW = 300  # 5 minutes
 
 PHONE_CHANGE_OLD_VERIFIED = 'old-verified'
 PHONE_CHANGE_NEW_AWAITING = 'new-awaiting-verification'
+
+# Forgot password utilities
+RESET_TOKEN_CACHE_KEY = 'reset-token:{id}'
+RESET_TOKEN_WINDOW = 900  # 15 minutes

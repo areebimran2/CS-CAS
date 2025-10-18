@@ -144,6 +144,7 @@ AUTH_USER_MODEL = 'myauth.User'
 
 # Two-Factor Authentication settings (SMS and Email backend set up)
 TWO_FACTOR_SMS_GATEWAY = 'two_factor.gateways.fake.Fake' # Use a real gateway in production
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Use a real email backend in production
 
 # Logging settings for debugging purposes
 LOGGING = {

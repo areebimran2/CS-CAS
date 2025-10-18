@@ -1,9 +1,10 @@
 from common.schemas import ErrorModel
-from ninja.errors import ValidationError
+from ninja.errors import ValidationError, HttpError
 
-class APIBaseException(Exception):
+
+class APIBaseError(HttpError):
     """
-    Base class for all custom API exceptions.
+    Base class for all custom API errors.
     Ensures consistency of the error model across the application.
     Supports extra parameters for flexibility.
     """
@@ -11,14 +12,13 @@ class APIBaseException(Exception):
     title = "An error occurred"
     status = 500
 
-    def __init__(self, title=None, status=None, detail=None, instance=None, errors=None, **context):
+    def __init__(self, title=None, status=None, detail=None, instance=None, errors=None):
         self.title = title or self.title
         self.status = status or self.status
         self.detail = detail or self.title
         self.instance = instance
         self.errors = errors
-        self.context = context
-        super().__init__(self.detail)
+        super().__init__(status_code=status, message=title)
 
     def to_dict(self):
         return {
@@ -30,52 +30,54 @@ class APIBaseException(Exception):
             "errors": self.errors,
         }
 
-class SeasonOverlapException(APIBaseException):
+class SeasonOverlapError(APIBaseError):
     type = "SEASON_OVERLAP"
 
-class SailingOverlapException(APIBaseException):
+class SailingOverlapError(APIBaseError):
     type = "SAILING_OVERLAP"
 
-class CabinAlreadyBookedException(APIBaseException):
+class CabinAlreadyBookedError(APIBaseError):
     type = "CABIN_ALREADY_BOOKED"
 
-class ActiveHoldExistsException(APIBaseException):
+class ActiveHoldExistsError(APIBaseError):
     type = "HOLD_EXISTS"
 
-class FXRatesStaleException(APIBaseException):
+class FXRatesStaleError(APIBaseError):
     type = "FX_STALE"
 
-class PermissionDeniedException(APIBaseException):
+class PermissionDeniedError(APIBaseError):
     type = "PERMISSION_DENIED"
 
-# Unnecessary since we are overriding pydantic's ValidationError exception handler
-# class ValidationFailedException(APIBaseException):
-#     type = "VALIDATION_FAILED"
+# Specific Error for validation failures
+class ValidationFailedError(APIBaseError):
+    type = "VALIDATION_FAILED"
 
-class RateLimitedException(APIBaseException):
+class RateLimitedError(APIBaseError):
     type = "RATE_LIMITED"
 
-class IdempotentReplayException(APIBaseException):
+class IdempotentReplayError(APIBaseError):
     type = "IDEMPOTENT_REPLAY"
 
-class APIExceptionManager:
+class APIErrorManager:
     def __init__(self, api):
         self.api = api
         self.register_handlers()
 
     def register_handlers(self):
-        self.api.add_exception_handler(APIBaseException, self.handle_api_exception)
+        self.api.add_exception_handler(APIBaseError, self.handle_api_errors)
         self.api.add_exception_handler(ValidationError, self.handle_validation_errors)
 
-    def handle_api_exception(self, request, exc: APIBaseException):
+    def handle_api_errors(self, request, exc: APIBaseError):
         error_model = ErrorModel(**exc.to_dict())
+        error_model.instance = request.path
         return self.api.create_response(request, error_model, status=exc.status)
 
+    # Override for ValidationError to provide detailed error information
     def handle_validation_errors(self, request, exc: ValidationError):
         error_model = ErrorModel(
             type="VALIDATION_FAILED",
             title="Validation Failed",
-            status=422,
+            status=400,
             detail="One or more validation errors occurred.",
             instance=request.path,
             errors=exc.errors

@@ -30,49 +30,63 @@ class LoginOut(Schema):
 
 
 # TFA endpoint schemas
-class TFASetupIn(Schema):
+class UnAuthPurpose(str, Enum):
+    # Represents purposes that correspond to unauthenticated actions
+    # Add more OTP purposes as needed
+    LOGIN = 'login'
+    RESET_PASSWORD = 'reset-password'
+
+class TFASetupTOTPIn(Schema):
     id: uuid.UUID
 
+class TFASetupTOTPOut(Schema):
+    id: uuid.UUID
+    otpauth_url: str
 
 class TFAConfirmTOTPIn(Schema):
     id: uuid.UUID
     url: str
     passcode: str
 
-
-class TFASetupTOTPOut(Schema):
+class TFASetupSMSIn(Schema):
     id: uuid.UUID
-    otpauth_url: str
-
+    purpose: UnAuthPurpose
 
 class TFAConfirmOut(Schema):
     id: uuid.UUID
     device_id: str
     message: str
 
-
 class TFAVerifyIn(Schema):
     id: uuid.UUID
     device_id: str
     passcode: str
-
+    purpose: UnAuthPurpose
 
 class TFAVerifyOut(Schema):
     access: str
     refresh: str
 
+class ForgotPasswordIn(Schema):
+    email: str
+
+class ResetPasswordIn(Schema):
+    id: uuid.UUID
+    token: str
+    new_password: str
+    passcode: str
+
 # Authenticated user OTP security schemas
-class Purpose(str, Enum):
+class AuthPurpose(str, Enum):
     # Represents purposes that correspond to secure authenticated actions
     # Add more OTP purposes as needed
     VERIFY_OLD_PHONE = 'verify-old-phone'
     VERIFY_NEW_PHONE = 'verify-new-phone'
     CHANGE_EMAIL = 'change-email'
     CHANGE_PASSWORD = 'change-password'
-    FORGOT_PASSWORD = 'forgot-password'
 
 class SecuritySetupIn(Schema):
-    purpose: Purpose
+    purpose: AuthPurpose
 
 class VerifySchema(Schema):
     passcode: str
