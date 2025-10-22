@@ -10,6 +10,7 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django_otp import devices_for_user
 from django_otp.models import Device
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router, PatchDict
@@ -177,7 +178,10 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
 def verify_2fa(request, data: TFAVerifyIn):
     user_id = get_verification_context(data.id)
     user = get_object_or_404(User, id=user_id)
-    device = Device.objects.filter(user=user).first()
+
+    # TODO: the device ID should be cached along with user ID in the verification context to avoid querying all devices.
+    # For convenience, we use 'devices_for_user' to get the user's devices.
+    device = list(devices_for_user(user=user))[-1]
 
     verify_cached_otp(device, user, data.purpose.value, data.passcode)
 
@@ -214,7 +218,7 @@ def forgot_password(request, data: ForgotPasswordIn):
 
         # For simplicity, we send the context ID and token directly in the email body.
         # In production, send these to the corresponding frontend link for password reset.
-        reset_link = f'USER ID: {context_id} \nTOKEN: {token}'
+        reset_link = f'VERIFICATION CONTEXT: {context_id} \nTOKEN: {token}'
 
         send_mail(
             subject='Password reset request',
