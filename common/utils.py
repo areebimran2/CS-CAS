@@ -1,4 +1,6 @@
 import hashlib
+import secrets
+import uuid
 
 from django.core.cache import cache
 from django_otp.models import Device
@@ -10,12 +12,16 @@ from two_factor.utils import totp_digits
 
 from myauth.models import User
 
-# Common caching utilities
+# Verification utilities for OTP with caching
 OTP_HASH_CACHE_KEY = 'otp:{purpose}:{id}:hash'
 OTP_ATTEMPT_CACHE_KEY = 'otp:{purpose}:{id}:attempts'
 
 OTP_MAX_ATTEMPTS = 5
 OTP_ATTEMPT_WINDOW = 180  # 3 minutes
+
+VERIFICATION_CONTEXT_CACHE_KEY = 'verification:context:{id}'
+VERIFICATION_USER_CACHE_KEY = 'verification:user:{id}'
+VERIFICATION_WINDOW = 600  # 10 minutes
 
 def generate_cached_challenge(device: PhoneDevice, key_hash: str, key_attempts: str) -> None:
     """
@@ -82,6 +88,59 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -
     cache.delete_many([key_hash, key_attempts])
 
     return None
+
+def set_verification_context(user: User) -> str:
+    """
+    Initializes a verification context for the user and returns the context ID.
+
+    :param user: The User instance
+    :return: The verification context ID
+    """
+    token = secrets.token_urlsafe(16)  # Generate a secure identifier to send to the client
+    verif_id = f'verif.{token}'
+
+    # Keep track of the verification context in the cache, the user id is mapped back to the token to ensure the
+    # user has only one active verification session at a time.
+    context_cache_key = VERIFICATION_CONTEXT_CACHE_KEY.format(id=verif_id)  # Link the token to the user ID
+    user_cache_key = VERIFICATION_USER_CACHE_KEY.format(id=user.id)  # Link the user ID to the token
+
+    # Invalidate any existing verification context for the user
+    cache.delete_many([cache.get(user_cache_key), user_cache_key])
+
+    cache.set_many({context_cache_key: user.id, user_cache_key: verif_id}, VERIFICATION_WINDOW)
+
+    return verif_id
+
+def get_verification_context(context_id: str) -> uuid.UUID:
+    """
+    Retrieves the user ID associated with the given verification context ID.
+
+    :param context_id: The verification context ID
+    :return: The user ID
+    :raises AuthenticationError: If the context is invalid or expired
+    """
+    context_cache_key = VERIFICATION_CONTEXT_CACHE_KEY.format(id=context_id)
+    user_id = cache.get(context_cache_key)
+
+    if user_id is None:
+        raise AuthenticationError()
+
+    return user_id
+
+def delete_verification_context(user: User, context_id: str) -> None:
+    """
+    Deletes the verification context for the given user and context ID.
+
+    :param user: The User instance
+    :param context_id: The verification context ID
+    """
+    context_cache_key = VERIFICATION_CONTEXT_CACHE_KEY.format(id=context_id)
+    user_cache_key = VERIFICATION_USER_CACHE_KEY.format(id=user.id)
+
+    cache.delete_many([context_cache_key, user_cache_key])
+
+    return None
+
 
 # Phone change utilities
 PHONE_CHANGE_CACHE_KEY = 'phone-change:{id}'

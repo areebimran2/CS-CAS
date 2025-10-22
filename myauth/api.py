@@ -1,6 +1,5 @@
 import base64
 import hashlib
-
 import pyotp
 import binascii
 
@@ -25,7 +24,9 @@ from two_factor.utils import default_device
 from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW, PHONE_CHANGE_OLD_VERIFIED, \
-    PHONE_CHANGE_NEW_AWAITING, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY
+    PHONE_CHANGE_NEW_AWAITING, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
+    VERIFICATION_CONTEXT_CACHE_KEY, VERIFICATION_WINDOW, set_verification_context, get_verification_context, \
+    delete_verification_context
 from myauth.schemas import *
 
 router = Router()
@@ -50,8 +51,10 @@ def login(request, data: LoginIn):
 
     device = default_device(user)
 
+    context_id = set_verification_context(user)
+
     return {
-        'id': user.id,
+        'id': context_id,
         'method': device
     }
 
@@ -63,7 +66,8 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
     The OTP URI should be used to generate a QR code for the user to scan with their authenticator app.
     """
-    user = get_object_or_404(User, id=data.id)
+    user_id = get_verification_context(data.id)
+    user = get_object_or_404(User, id=user_id)
     active_device = default_device(user)
 
     if not user.twofa_enabled or user.twofa_method != 'totp':
@@ -92,14 +96,15 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
     )
 
     return {
-        'id': user.id,
+        'id': data.id,
         'otpauth_url': otp_uri
     }
 
 
 @router.post('/2fa/totp/confirm', response=TFAConfirmOut)
 def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
-    user = get_object_or_404(User, id=data.id)
+    user_id = get_verification_context(data.id)
+    user = get_object_or_404(User, id=user_id)
     otp = pyotp.parse_uri(data.url) # Extract the OTP info from the provided URI (secret, name, etc.)
 
     # Validate that the OTP URI corresponds to the user
@@ -124,15 +129,15 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     device.save()
 
     return {
-        'id': user.id,
-        'device_id': device.persistent_id,
+        'id': data.id,
         'message': 'TOTP device confirmed',
     }
 
 
 @router.post('/2fa/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupSMSIn):
-    user = get_object_or_404(User, id=data.id)
+    user_id = get_verification_context(data.id)
+    user = get_object_or_404(User, id=user_id)
     active_device = default_device(user)
 
     if not user.twofa_enabled or user.twofa_method != 'sms':
@@ -163,22 +168,24 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
     generate_cached_challenge(device, key_hash, key_attempts)
 
     return {
-        'id': user.id,
-        'device_id': device.persistent_id,
+        'id': data.id,
         'message': 'SMS sent to registered phone number',
     }
 
 
 @router.post('/2fa/verify', response=TFAVerifyOut)
 def verify_2fa(request, data: TFAVerifyIn):
-    user = get_object_or_404(User, id=data.id)
-    device = Device.from_persistent_id(data.device_id)
+    user_id = get_verification_context(data.id)
+    user = get_object_or_404(User, id=user_id)
+    device = Device.objects.filter(user=user).first()
 
     verify_cached_otp(device, user, data.purpose.value, data.passcode)
 
     if default_device(user) is None:
         device.name = 'default'
         device.save()
+
+    delete_verification_context(user, data.id)
 
     refresh = RefreshToken.for_user(user)
 
@@ -203,9 +210,11 @@ def forgot_password(request, data: ForgotPasswordIn):
 
         cache.set(key_reset_password, hashed, RESET_TOKEN_WINDOW)
 
-        # For simplicity, we send the user ID and token directly in the email body.
+        context_id = set_verification_context(user)
+
+        # For simplicity, we send the context ID and token directly in the email body.
         # In production, send these to the corresponding frontend link for password reset.
-        reset_link = f'USER ID: {user.id} \nTOKEN: {token}'
+        reset_link = f'USER ID: {context_id} \nTOKEN: {token}'
 
         send_mail(
             subject='Password reset request',
@@ -220,7 +229,8 @@ def forgot_password(request, data: ForgotPasswordIn):
 
 @router.post('/password/reset', response=MessageOut)
 def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAuthPurpose.RESET_PASSWORD):
-    user = get_object_or_404(User, id=data.id)
+    user_id = get_verification_context(data.id)
+    user = get_object_or_404(User, id=user_id)
     device = default_device(user)
 
     verify_cached_otp(device, user, purpose.value, data.passcode)
@@ -240,6 +250,7 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
 
     # Clear the cached token on successful verification
     cache.delete(key_reset_password)
+    delete_verification_context(user, data.id)
 
     return {
         'message': 'Password has been reset successfully'

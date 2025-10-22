@@ -10,7 +10,6 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 
 # Login endpoint schemas
 class Method(Schema):
-    persistent_id: str
     name: str
     type: str
 
@@ -25,7 +24,7 @@ class LoginIn(Schema):
 
 
 class LoginOut(Schema):
-    id: uuid.UUID
+    id: str
     method: Optional[Method] = None
 
 
@@ -37,29 +36,27 @@ class UnAuthPurpose(str, Enum):
     RESET_PASSWORD = 'reset-password'
 
 class TFASetupTOTPIn(Schema):
-    id: uuid.UUID
+    id: str
 
 class TFASetupTOTPOut(Schema):
-    id: uuid.UUID
+    id: str
     otpauth_url: str
 
 class TFAConfirmTOTPIn(Schema):
-    id: uuid.UUID
+    id: str
     url: str
     passcode: str
 
 class TFASetupSMSIn(Schema):
-    id: uuid.UUID
+    id: str
     purpose: UnAuthPurpose
 
 class TFAConfirmOut(Schema):
-    id: uuid.UUID
-    device_id: str
+    id: str
     message: str
 
 class TFAVerifyIn(Schema):
-    id: uuid.UUID
-    device_id: str
+    id: str
     passcode: str
     purpose: UnAuthPurpose
 
@@ -71,7 +68,7 @@ class ForgotPasswordIn(Schema):
     email: str
 
 class ResetPasswordIn(Schema):
-    id: uuid.UUID
+    id: str
     token: str
     new_password: str
     passcode: str
