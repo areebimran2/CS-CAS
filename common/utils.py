@@ -51,7 +51,7 @@ def generate_cached_challenge(device: PhoneDevice, key_hash: str, key_attempts: 
 
     return None
 
-def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -> None:
+def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str, clear: bool = True) -> None:
     """
     Verifies the provided OTP passcode against the cached hash.
 
@@ -59,6 +59,7 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -
     :param user: The User instance
     :param purpose: The purpose string for the OTP (e.g., 'change-email')
     :param passcode: The OTP passcode to verify
+    :param clear: boolean flag to clear the cached data on success or not
     :return: None
     :raises AuthenticationError: If verification fails
     """
@@ -68,8 +69,9 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -
     key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose, id=user.id)
     key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose, id=user.id)
 
-    otp_hash = cache.get(key_hash)
-    otp_attempts = cache.get(key_attempts, 0)
+    hits = cache.get_many([key_hash, key_attempts])
+    otp_hash = hits.get(key_hash)
+    otp_attempts = hits.get(key_attempts, 0)
 
     if isinstance(device, PhoneDevice) and otp_hash is None:
         raise AuthenticationError()
@@ -85,7 +87,8 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str) -
         raise AuthenticationError()
 
     # Clear the cached metadata for OTP on successful verification
-    cache.delete_many([key_hash, key_attempts])
+    if clear:
+        cache.delete_many([key_hash, key_attempts])
 
     return None
 
@@ -126,20 +129,6 @@ def get_verification_context(context_id: str) -> uuid.UUID:
         raise AuthenticationError()
 
     return user_id
-
-def delete_verification_context(user: User, context_id: str) -> None:
-    """
-    Deletes the verification context for the given user and context ID.
-
-    :param user: The User instance
-    :param context_id: The verification context ID
-    """
-    context_cache_key = VERIFICATION_CONTEXT_CACHE_KEY.format(id=context_id)
-    user_cache_key = VERIFICATION_USER_CACHE_KEY.format(id=user.id)
-
-    cache.delete_many([context_cache_key, user_cache_key])
-
-    return None
 
 
 # Phone change utilities

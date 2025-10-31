@@ -26,8 +26,7 @@ from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW, PHONE_CHANGE_OLD_VERIFIED, \
     PHONE_CHANGE_NEW_AWAITING, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
-    VERIFICATION_CONTEXT_CACHE_KEY, VERIFICATION_WINDOW, set_verification_context, get_verification_context, \
-    delete_verification_context
+    VERIFICATION_CONTEXT_CACHE_KEY, VERIFICATION_WINDOW, set_verification_context, get_verification_context
 from myauth.schemas import *
 
 router = Router()
@@ -189,7 +188,11 @@ def verify_2fa(request, data: TFAVerifyIn):
         device.name = 'default'
         device.save()
 
-    delete_verification_context(user, data.id)
+    # Clear the verification session
+    key_verif_context = VERIFICATION_CONTEXT_CACHE_KEY.format(id=data.id)
+    key_verif_user = VERIFICATION_USER_CACHE_KEY.format(id=user.id)
+
+    cache.delete_many([key_verif_context, key_verif_user])
 
     refresh = RefreshToken.for_user(user)
 
@@ -237,9 +240,11 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
     user = get_object_or_404(User, id=user_id)
     device = default_device(user)
 
-    verify_cached_otp(device, user, purpose.value, data.passcode)
+    # Verify the OTP passcode, do not clear the cached OTP data yet in case other verifications fail
+    verify_cached_otp(device, user, purpose.value, data.passcode, clear=False)
 
     key_reset_password = RESET_TOKEN_CACHE_KEY.format(id=user.id)
+
     cached_token = cache.get(key_reset_password)
     hashed_token = hashlib.sha256(data.token.encode('utf-8')).hexdigest()
 
@@ -252,9 +257,16 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
     user.set_password(data.new_password)
     user.save()
 
-    # Clear the cached token on successful verification
-    cache.delete(key_reset_password)
-    delete_verification_context(user, data.id)
+    # OTP cached values are only cleared after successful password reset
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+
+    # Clear the verification session
+    key_verif_context = VERIFICATION_CONTEXT_CACHE_KEY.format(id=data.id)
+    key_verif_user = VERIFICATION_USER_CACHE_KEY.format(id=user.id)
+
+    # Clear the cache on successful verification
+    cache.delete_many([key_hash, key_attempts, key_reset_password, key_verif_context, key_verif_user])
 
     return {
         'message': 'Password has been reset successfully'
