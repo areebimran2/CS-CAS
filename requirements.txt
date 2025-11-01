@@ -13,3 +13,4 @@ hiredis==3.3.0
 redis==7.0.1
 django-redis==6.0.0
 pydantic-extra-types==2.10.6
+pydantic[email]==2.12.3

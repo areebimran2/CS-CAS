@@ -5,11 +5,12 @@ import uuid
 from django.core.cache import cache
 from django_otp.models import Device
 from django_otp.oath import totp
-from ninja.errors import AuthenticationError, HttpError
+from ninja_extra import status
 from two_factor.gateways import make_call, send_sms
 from two_factor.plugins.phonenumber.models import PhoneDevice
 from two_factor.utils import totp_digits
 
+from common.exceptions import APIBaseError
 from myauth.models import User
 
 # Verification utilities for OTP with caching
@@ -64,7 +65,11 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str, c
     :raises AuthenticationError: If verification fails
     """
     if device is None or device.user != user:
-        raise AuthenticationError()
+        raise APIBaseError(
+            title='Encountered 2FA device error',
+            detail='The provided 2FA device is invalid or does not belong to the user.',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
 
     key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose, id=user.id)
     key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose, id=user.id)
@@ -74,17 +79,30 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str, c
     otp_attempts = hits.get(key_attempts, 0)
 
     if isinstance(device, PhoneDevice) and otp_hash is None:
-        raise AuthenticationError()
+        raise APIBaseError(
+            title='SMS OTP verification error',
+            detail=f'The client has not requested an OTP code or the code has expired for the following: {purpose}',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
 
     if otp_attempts >= 5:
         cache.delete_many([key_hash, key_attempts])
-        raise HttpError(429, 'Too many attempts. Please request a new code.')
+        raise APIBaseError(
+            title='OTP retry limit exceeded',
+            detail=f'The maximum number of OTP verification attempts has been exceeded for the following: {purpose}',
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
 
     hashed_input = hashlib.sha256(passcode.encode('utf-8')).hexdigest()
 
     if (isinstance(device, PhoneDevice) and hashed_input != otp_hash) or not device.verify_token(passcode):
         cache.set(key_attempts, otp_attempts + 1, OTP_ATTEMPT_WINDOW)
-        raise AuthenticationError()
+        raise APIBaseError(
+            title='OTP verification error',
+            detail=f'The provided OTP code is invalid for the following: {purpose}',
+            status=status.HTTP_401_UNAUTHORIZED,
+            errors=[{'field': 'passcode', 'message': 'Invalid OTP code'}],
+        )
 
     # Clear the cached metadata for OTP on successful verification
     if clear:
@@ -126,7 +144,11 @@ def get_verification_context(context_id: str) -> uuid.UUID:
     user_id = cache.get(context_cache_key)
 
     if user_id is None:
-        raise AuthenticationError()
+        raise APIBaseError(
+            title='User verification context error',
+            detail=f'The client has not established a valid verification context for a user, or it has expired.',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
 
     return user_id
 

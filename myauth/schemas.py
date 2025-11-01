@@ -5,8 +5,8 @@ from enum import Enum
 from typing import Optional
 import uuid
 
+from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
-
 
 # Login endpoint schemas
 class Method(Schema):
@@ -65,7 +65,7 @@ class TFAVerifyOut(Schema):
     refresh: str
 
 class ForgotPasswordIn(Schema):
-    email: str
+    email: EmailStr
 
 class ResetPasswordIn(Schema):
     id: str
@@ -81,6 +81,11 @@ class AuthPurpose(str, Enum):
     VERIFY_NEW_PHONE = 'verify-new-phone'
     CHANGE_EMAIL = 'change-email'
     CHANGE_PASSWORD = 'change-password'
+    CHANGE_TFA_METHOD = 'change-tfa-method'
+
+class TFAMethod(str, Enum):
+    SMS = 'sms'
+    TOTP = 'totp'
 
 class SecuritySetupIn(Schema):
     purpose: AuthPurpose
@@ -90,6 +95,20 @@ class VerifySchema(Schema):
 
 class ChangePhoneIn(Schema):
     phone: PhoneNumber
+
+class ChangePasswordIn(Schema):
+    passcode: str
+    old: str
+    new: str
+    confirm: str
+
+class ChangeEmailIn(Schema):
+    passcode: str
+    email: EmailStr
+
+class ChangeTFAMethodIn(Schema):
+    passcode: str
+    method: TFAMethod
 
 # User info endpoint schemas
 class UserSchema(ModelSchema):

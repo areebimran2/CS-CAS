@@ -27,7 +27,7 @@ class APIBaseError(HttpError):
             "status": self.status,
             "detail": self.detail,
             "instance": self.instance,
-            "errors": self.errors,
+            "errors": self.errors or [],
         }
 
 class SeasonOverlapError(APIBaseError):
@@ -77,7 +77,7 @@ class APIErrorManager:
         error_model = ErrorModel(
             type="VALIDATION_FAILED",
             title="Validation Failed",
-            status=400,
+            status=422,
             detail="One or more validation errors occurred.",
             instance=request.path,
             errors=exc.errors

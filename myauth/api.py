@@ -1,21 +1,16 @@
 import base64
+import binascii
 import hashlib
 import pyotp
-import binascii
 
-from django.core.cache import cache
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django_otp import devices_for_user
-from django_otp.models import Device
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router, PatchDict
-from ninja.errors import AuthenticationError, HttpError, ValidationError
-from ninja.responses import Response
 from ninja_extra import status
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import RefreshToken
@@ -26,7 +21,7 @@ from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW, PHONE_CHANGE_OLD_VERIFIED, \
     PHONE_CHANGE_NEW_AWAITING, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
-    VERIFICATION_CONTEXT_CACHE_KEY, VERIFICATION_WINDOW, set_verification_context, get_verification_context
+    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_verification_context
 from myauth.schemas import *
 
 router = Router()
@@ -74,7 +69,8 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
         # User has 2FA disabled raise an error
         # May also want to raise an error if the user has a different 2FA method enabled
         raise APIBaseError(
-            title='Either the given user does not have 2FA enabled or does not have the TOTP method set',
+            title='TOTP device setup failed',
+            detail='Either the given user does not have 2FA enabled or does not have the TOTP method set',
             status=status.HTTP_403_FORBIDDEN,
         )
 
@@ -110,8 +106,10 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     # Validate that the OTP URI corresponds to the user
     if user.email != otp.name:
         raise APIBaseError(
-            title='The provided OTP URI does not correspond to the given user',
+            title='Bad OTP URL for user',
+            detail='The provided OTP URL does not correspond to the given user',
             status=status.HTTP_400_BAD_REQUEST,
+            errors=[{'field': 'url', 'message': 'OTP URL does not match user email'}],
         )
 
     # Verify the provided passcode against the TOTP secret
@@ -120,6 +118,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
         return APIBaseError(
             title='Invalid TOTP passcode',
             status=status.HTTP_401_UNAUTHORIZED,
+            errors=[{'field': 'passcode'}],
         )
 
     # Successfully verified, create and save the TOTP device for the user
@@ -144,13 +143,14 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
         # User has 2FA disabled, raise an error
         # May also want to raise an error if the user has a different 2FA method enabled
         raise APIBaseError(
-            title='Either the given user does not have 2FA enabled or does not have the SMS method set',
+            title='SMS device setup failed',
+            detail='Either the given user does not have 2FA enabled or does not have the SMS method set',
             status=status.HTTP_403_FORBIDDEN,
         )
 
     if isinstance(active_device, TOTPDevice):
         raise APIBaseError(
-            title='User already has an active TOTP device',
+            title='Conflicting 2FA device found',
             detail=f'The users 2FA method is: {user.twofa_method}; this must also be TOTP',
             status=status.HTTP_409_CONFLICT,
         )
@@ -213,7 +213,11 @@ def forgot_password(request, data: ForgotPasswordIn):
 
         if cache.get(key_reset_password):
             # A reset token is already active for this user
-            raise HttpError(429, 'A password reset link has already been sent recently. Please check your email.')
+            raise APIBaseError(
+                title='Password reset request error',
+                detail='Password reset link has been sent recently. Please check the given email or try again later',
+                status=status.HTTP_409_CONFLICT,
+            )
 
         cache.set(key_reset_password, hashed, RESET_TOKEN_WINDOW)
 
@@ -245,14 +249,16 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
 
     key_reset_password = RESET_TOKEN_CACHE_KEY.format(id=user.id)
 
-    cached_token = cache.get(key_reset_password)
-    hashed_token = hashlib.sha256(data.token.encode('utf-8')).hexdigest()
+    cached_tok = cache.get(key_reset_password)
+    hashed_tok = hashlib.sha256(data.token.encode('utf-8')).hexdigest()
 
-    if cached_token is None or cached_token != hashed_token:
-        raise AuthenticationError()
-
-    if not default_token_generator.check_token(user, data.token):
-        raise AuthenticationError()
+    if cached_tok is None or cached_tok != hashed_tok or not default_token_generator.check_token(user, data.token):
+        raise APIBaseError(
+            title='Password reset failed',
+            detail='Error encountered when verifying password reset token',
+            status=status.HTTP_401_UNAUTHORIZED,
+            errors={'field': 'token', 'message': 'Invalid or expired token'},
+        )
 
     user.set_password(data.new_password)
     user.save()
@@ -315,7 +321,7 @@ def verify_old_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
     verify_cached_otp(device, user, purpose.value, data.passcode)
 
     key_phone_change = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
-    cache.set(key_phone_change, PHONE_CHANGE_OLD_VERIFIED, PHONE_CHANGE_WINDOW)
+    cache.set(key_phone_change, {'status': PHONE_CHANGE_OLD_VERIFIED}, PHONE_CHANGE_WINDOW)
 
     return {
         'message': 'Old phone number verified'
@@ -326,8 +332,13 @@ def change_phone(request, data: ChangePhoneIn, purpose: AuthPurpose = AuthPurpos
     user: User = request.auth
 
     key_phone_change = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
-    if cache.get(key_phone_change) != PHONE_CHANGE_OLD_VERIFIED:
-        raise HttpError(400, 'Old phone number not verified')
+    phone_change = cache.get(key_phone_change)
+    if phone_change.get('status') != PHONE_CHANGE_OLD_VERIFIED:
+        raise APIBaseError(
+            title='Error in phone number change flow',
+            detail='Old phone number not verified',
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     temp_device = PhoneDevice(
         user=user,
@@ -359,13 +370,17 @@ def verify_new_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
     key_phone_change = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
     phone_change = cache.get(key_phone_change)
 
-    if phone_change['status'] != PHONE_CHANGE_NEW_AWAITING:
-        raise HttpError(400, 'New phone number change not initiated or old phone not verified')
+    if phone_change.get('status') != PHONE_CHANGE_NEW_AWAITING:
+        raise APIBaseError(
+            title='Error in phone number change flow',
+            detail='New phone number change not initiated or old phone not verified',
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     temp_device = PhoneDevice(
-        key=phone_change['device_key'],
+        key=phone_change.get('device_key'),
         user=user,
-        number=phone_change['number'],
+        number=phone_change.get('number'),
     )
 
     verify_cached_otp(temp_device, user, purpose.value, data.passcode)
@@ -373,12 +388,54 @@ def verify_new_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
     # Clear the phone change cache key after successful verification
     cache.delete(key_phone_change)
 
-    user.phone = phone_change['number']
-    device.number = phone_change['number']
+    user.phone = phone_change.get('number')
+    device.number = phone_change.get('number')
 
     user.save()
     device.save()
 
     return {
         'message': 'New phone number verified, phone number updated'
+    }
+
+@router.post('/me/password/change', response=MessageOut, auth=JWTAuth())
+def password_change(request, data: ChangePasswordIn, purpose: AuthPurpose = AuthPurpose.CHANGE_PASSWORD):
+    user: User = request.auth
+    device = default_device(user)
+
+    verify_cached_otp(device, user, purpose.value, data.passcode)
+
+    user.set_password(data.new_password)
+    user.save()
+
+    return {
+        'message': 'Password changed successfully'
+    }
+
+@router.post('/me/email/change', response=MessageOut, auth=JWTAuth())
+def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpose.CHANGE_EMAIL):
+    user: User = request.auth
+    device = default_device(user)
+
+    verify_cached_otp(device, user, purpose.value, data.passcode)
+
+    user.email = data.email
+    user.save()
+
+    return {
+        'message': 'Email changed successfully'
+    }
+
+@router.post('/me/2fa-method/change', response=MessageOut, auth=JWTAuth())
+def tfa_method_change(request, data: ChangeTFAMethodIn, purpose: AuthPurpose = AuthPurpose.CHANGE_TFA_METHOD):
+    user: User = request.auth
+    device = default_device(user)
+
+    verify_cached_otp(device, user, purpose.value, data.passcode)
+
+    user.twofa_method = data.method
+    user.save()
+
+    return {
+        'message': 'TFA method changed successfully'
     }
