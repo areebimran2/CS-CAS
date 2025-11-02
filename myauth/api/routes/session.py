@@ -13,7 +13,7 @@ from common.exceptions import APIBaseError
 from common.utils import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
     VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_verification_context, validate_new_password
-from myauth.api.schemas import *
+from myauth.schemas import *
 
 router = Router(tags=['Session'])
 User = get_user_model()

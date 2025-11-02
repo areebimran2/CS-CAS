@@ -3,7 +3,6 @@ from ninja import Schema, ModelSchema
 from enum import Enum
 
 from typing import Optional
-import uuid
 
 from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
@@ -98,9 +97,7 @@ class ChangePhoneIn(Schema):
 
 class ChangePasswordIn(Schema):
     passcode: str
-    old: str
-    new: str
-    confirm: str
+    new_password: str
 
 class ChangeEmailIn(Schema):
     passcode: str

@@ -9,7 +9,7 @@ from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW, PHONE_CHANGE_OLD_VERIFIED, \
     PHONE_CHANGE_NEW_AWAITING, validate_new_password
-from myauth.api.schemas import *
+from myauth.schemas import *
 
 router = Router(tags=['Session'])
 User = get_user_model()
@@ -168,10 +168,14 @@ def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpos
 
 @router.post('/2fa-method/change', response=MessageOut, auth=JWTAuth())
 def tfa_method_change(request, data: ChangeTFAMethodIn, purpose: AuthPurpose = AuthPurpose.CHANGE_TFA_METHOD):
+    # This implementation is unfinished, and requires further checks to ensure proper TFA setup.
+    # TODO: Need to re-setup TFA after changing method
     user: User = request.auth
     device = default_device(user)
 
     verify_cached_otp(device, user, purpose.value, data.passcode)
+
+    device.delete()  # Remove existing 2FA device
 
     user.twofa_method = data.method
     user.save()

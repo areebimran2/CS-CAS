@@ -168,6 +168,19 @@ LOGGING = {
 NINJA_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+
+    # aud/iss claims
+    'AUDIENCE': 'cscas-client',
+    'ISSUER': 'cscas-api',
+
+    # algorithm choice
+    # keep default for now, switch to RS256 later
+    # 'ALGORITHM': 'RS256',
+    # 'SIGNING_KEY':
+    # 'VERIFYING_KEY':
+
+    # clock skew
+    'LEEWAY': 60, # seconds (±60s)
 }
 
 # Internationalization

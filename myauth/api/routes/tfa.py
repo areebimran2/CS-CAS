@@ -15,7 +15,7 @@ from two_factor.utils import default_device
 from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY, get_verification_context
-from myauth.api.schemas import *
+from myauth.schemas import *
 
 router = Router(tags=['TFA'])
 User = get_user_model()
@@ -54,7 +54,7 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
     # Build the OTP URI (for QR code rendering on the client side)
     otp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
         name=user.email,
-        issuer_name="UTC-CS-CAS"
+        issuer_name="cscas-api"
     )
 
     return {
