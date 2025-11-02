@@ -185,3 +185,14 @@ PHONE_CHANGE_NEW_AWAITING = 'new-awaiting-verification'
 # Forgot password utilities
 RESET_TOKEN_CACHE_KEY = 'reset-token:{id}'
 RESET_TOKEN_WINDOW = 900  # 15 minutes
+
+
+def not_implemented():
+    """
+    Raises a 501 Not Implemented response for stubbed endpoints.
+    """
+    raise APIBaseError(
+        title='Not Implemented',
+        status=status.HTTP_501_NOT_IMPLEMENTED,
+        detail='This endpoint is stubbed. Fill in the handler logic.',
+    )

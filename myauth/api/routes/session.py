@@ -7,12 +7,14 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja_extra import status
+from ninja_jwt.authentication import JWTAuth
 from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
 from common.utils import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
-    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_verification_context, validate_new_password
+    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_verification_context, validate_new_password, \
+    not_implemented
 from myauth.schemas import *
 
 router = Router(tags=['Session'])
@@ -43,6 +45,26 @@ def login(request, data: LoginIn):
         'id': context_id,
         'method': device
     }
+
+@router.post('/logout', response=MessageOut, auth=JWTAuth())
+def logout(request):
+    """
+    Should revoke refresh token that is stored in an HTTP-only cookie on the client side.
+
+    Also, deny-list the access token to prevent its further use until it naturally expires.
+    """
+    not_implemented()
+
+@router.post('/logout', response=MessageOut, auth=JWTAuth())
+def refresh(request):
+    """
+    Should issue a new access token using the refresh token stored in an HTTP-only cookie on the client side.
+
+    Also, rotate the refresh token by issuing a new one and deny-list the access token.
+    """
+    not_implemented()
+
+
 
 @router.post('/password/forgot', response=MessageOut)
 def forgot_password(request, data: ForgotPasswordIn):
@@ -122,3 +144,4 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
     return {
         'message': 'Password has been reset successfully'
     }
+

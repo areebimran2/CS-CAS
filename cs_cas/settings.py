@@ -183,6 +183,8 @@ NINJA_JWT = {
     'LEEWAY': 60, # seconds (±60s)
 }
 
+REFRESH_COOKIE_KEY = 'cscas-refresh'
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -215,3 +217,4 @@ CACHES = {
         }
     }
 }
+

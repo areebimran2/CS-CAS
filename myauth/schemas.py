@@ -7,6 +7,7 @@ from typing import Optional
 from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
+
 # Login endpoint schemas
 class Method(Schema):
     name: str
@@ -34,43 +35,52 @@ class UnAuthPurpose(str, Enum):
     LOGIN = 'login'
     RESET_PASSWORD = 'reset-password'
 
+
 class TFASetupTOTPIn(Schema):
     id: str
+
 
 class TFASetupTOTPOut(Schema):
     id: str
     otpauth_url: str
+
 
 class TFAConfirmTOTPIn(Schema):
     id: str
     url: str
     passcode: str
 
+
 class TFASetupSMSIn(Schema):
     id: str
     purpose: UnAuthPurpose
 
+
 class TFAConfirmOut(Schema):
     id: str
     message: str
+
 
 class TFAVerifyIn(Schema):
     id: str
     passcode: str
     purpose: UnAuthPurpose
 
+
 class TFAVerifyOut(Schema):
     access: str
-    refresh: str
+
 
 class ForgotPasswordIn(Schema):
     email: EmailStr
+
 
 class ResetPasswordIn(Schema):
     id: str
     token: str
     new_password: str
     passcode: str
+
 
 # Authenticated user OTP security schemas
 class AuthPurpose(str, Enum):
@@ -82,30 +92,38 @@ class AuthPurpose(str, Enum):
     CHANGE_PASSWORD = 'change-password'
     CHANGE_TFA_METHOD = 'change-tfa-method'
 
+
 class TFAMethod(str, Enum):
     SMS = 'sms'
     TOTP = 'totp'
 
+
 class SecuritySetupIn(Schema):
     purpose: AuthPurpose
+
 
 class VerifySchema(Schema):
     passcode: str
 
+
 class ChangePhoneIn(Schema):
     phone: PhoneNumber
+
 
 class ChangePasswordIn(Schema):
     passcode: str
     new_password: str
 
+
 class ChangeEmailIn(Schema):
     passcode: str
     email: EmailStr
 
+
 class ChangeTFAMethodIn(Schema):
     passcode: str
     method: TFAMethod
+
 
 # User info endpoint schemas
 class UserSchema(ModelSchema):
@@ -118,10 +136,12 @@ class UserSchema(ModelSchema):
     def resolve_phone(obj):
         return str(obj.phone)
 
+
 class UserBasicUpdateSchema(ModelSchema):
     class Meta:
         model = get_user_model()
         fields = ['first_name', 'middle_name', 'last_name', 'designation']
+
 
 # Miscellaneous schemas
 class MessageOut(Schema):

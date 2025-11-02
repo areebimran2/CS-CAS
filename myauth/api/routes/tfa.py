@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django_otp import devices_for_user
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router
+from ninja.responses import Response
 from ninja_extra import status
 from ninja_jwt.tokens import RefreshToken
 from two_factor.plugins.phonenumber.models import PhoneDevice
@@ -15,6 +16,7 @@ from two_factor.utils import default_device
 from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY, get_verification_context
+from cs_cas import settings
 from myauth.schemas import *
 
 router = Router(tags=['TFA'])
@@ -162,7 +164,15 @@ def verify_2fa(request, data: TFAVerifyIn):
 
     refresh = RefreshToken.for_user(user)
 
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
+    resp = Response({
+        'access': str(refresh.access_token)
+    })
+    resp.set_cookie(
+        key=settings.REFRESH_COOKIE_KEY,
+        value=str(refresh),
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite='Strict',
+    )
+
+    return resp
