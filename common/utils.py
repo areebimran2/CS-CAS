@@ -2,7 +2,9 @@ import hashlib
 import secrets
 import uuid
 
+from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django_otp.models import Device
 from django_otp.oath import totp
 from ninja_extra import status
@@ -62,7 +64,7 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str, c
     :param passcode: The OTP passcode to verify
     :param clear: boolean flag to clear the cached data on success or not
     :return: None
-    :raises AuthenticationError: If verification fails
+    :raises APIBaseError: If verification fails
     """
     if device is None or device.user != user:
         raise APIBaseError(
@@ -138,7 +140,7 @@ def get_verification_context(context_id: str) -> uuid.UUID:
 
     :param context_id: The verification context ID
     :return: The user ID
-    :raises AuthenticationError: If the context is invalid or expired
+    :raises APIBaseError: If the context is invalid or expired
     """
     context_cache_key = VERIFICATION_CONTEXT_CACHE_KEY.format(id=context_id)
     user_id = cache.get(context_cache_key)
@@ -152,6 +154,26 @@ def get_verification_context(context_id: str) -> uuid.UUID:
 
     return user_id
 
+def validate_new_password(user: User, password: str) -> None:
+    """
+    Validates the provided password against the user's stored password.
+
+    :param user: The User instance
+    :param password: The password to validate
+    :return: None
+    :raises APIBaseError: If the password does not meet the policy requirements
+    """
+    try:
+        validate_password(password, user=user)
+    except ValidationError as e:
+        raise APIBaseError(
+            title='Password validation error',
+            detail='The provided new password does not meet the password policy requirements',
+            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            errors=[{'field': 'new_password', 'messages': e.messages}],
+        )
+
+    return None
 
 # Phone change utilities
 PHONE_CHANGE_CACHE_KEY = 'phone-change:{id}'
