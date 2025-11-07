@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 import uuid
+from typing import Optional, Union, Dict, Any
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
@@ -112,11 +113,16 @@ def verify_cached_otp(device: Device, user: User, purpose: str, passcode: str, c
 
     return None
 
-def set_verification_context(user: User) -> str:
+def set_verification_context(user: User, add_context: Optional[Dict[str, Any]] = None) -> str:
     """
-    Initializes a verification context for the user and returns the context ID.
+    Initializes a verification context for the user and returns the context ID. The context is typically just the user
+    ID, but additional context information can be added as needed.
+
+    Note: When additional context is provided, the stored context will be a dictionary,
+    otherwise it will just be the user ID.
 
     :param user: The User instance
+    :param add_context: Additional Context information to store (e.g., device_id, remember_me)
     :return: The verification context ID
     """
     token = secrets.token_urlsafe(16)  # Generate a secure identifier to send to the client
@@ -130,29 +136,34 @@ def set_verification_context(user: User) -> str:
     # Invalidate any existing verification context for the user
     cache.delete_many([cache.get(user_cache_key), user_cache_key])
 
-    cache.set_many({context_cache_key: user.id, user_cache_key: verif_id}, VERIFICATION_WINDOW)
+    context = {'user_id': user.id}
+
+    if add_context:
+        context |= add_context
+
+    cache.set_many({context_cache_key: context, user_cache_key: verif_id}, VERIFICATION_WINDOW)
 
     return verif_id
 
-def get_verification_context(context_id: str) -> uuid.UUID:
+def get_verification_context(context_id: str) -> Dict[str, Any]:
     """
-    Retrieves the user ID associated with the given verification context ID.
+    Retrieves the context information associated with the given verification context ID.
 
     :param context_id: The verification context ID
-    :return: The user ID
+    :return: Information contained in the verification context (e.g., user_id, device_id, remember_me)
     :raises APIBaseError: If the context is invalid or expired
     """
     context_cache_key = VERIFICATION_CONTEXT_CACHE_KEY.format(id=context_id)
-    user_id = cache.get(context_cache_key)
+    context = cache.get(context_cache_key)
 
-    if user_id is None:
+    if context is None:
         raise APIBaseError(
             title='User verification context error',
             detail=f'The client has not established a valid verification context for a user, or it has expired.',
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
-    return user_id
+    return context
 
 def validate_new_password(user: User, password: str) -> None:
     """

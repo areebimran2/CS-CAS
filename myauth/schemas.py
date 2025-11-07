@@ -21,6 +21,7 @@ class Method(Schema):
 class LoginIn(Schema):
     email: str
     password: str
+    remember_me: Optional[bool] = False
 
 
 class LoginOut(Schema):

@@ -38,8 +38,10 @@ def login(request, data: LoginIn):
         )
 
     device = default_device(user)
+    device_id = device.persistent_id if device else None
 
-    context_id = set_verification_context(user)
+    context = {'device_id': device_id, 'remember_me': data.remember_me}
+    context_id = set_verification_context(user, add_context=context)
 
     return {
         'id': context_id,
@@ -105,8 +107,8 @@ def forgot_password(request, data: ForgotPasswordIn):
 
 @router.post('/password/reset', response=MessageOut)
 def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAuthPurpose.RESET_PASSWORD):
-    user_id = get_verification_context(data.id)
-    user = get_object_or_404(User, id=user_id)
+    context = get_verification_context(data.id)
+    user = get_object_or_404(User, id=context.get('user_id'))
     device = default_device(user)
 
     # Verify the OTP passcode, do not clear the cached OTP data yet in case other verifications fail

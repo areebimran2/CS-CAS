@@ -5,6 +5,7 @@ import pyotp
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from django_otp import devices_for_user
+from django_otp.models import Device
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router
 from ninja.responses import Response
@@ -29,9 +30,9 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
     The OTP URI should be used to generate a QR code for the user to scan with their authenticator app.
     """
-    user_id = get_verification_context(data.id)
-    user = get_object_or_404(User, id=user_id)
-    active_device = default_device(user)
+    context = get_verification_context(data.id)
+    user = get_object_or_404(User, id=context.get('user_id'))
+    active_device = Device.from_persistent_id(context.get('device_id'))
 
     if not user.twofa_enabled or user.twofa_method != 'totp':
         # User has 2FA disabled raise an error
@@ -67,8 +68,8 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
 @router.post('/totp/confirm', response=TFAConfirmOut)
 def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
-    user_id = get_verification_context(data.id)
-    user = get_object_or_404(User, id=user_id)
+    context = get_verification_context(data.id)
+    user = get_object_or_404(User, id=context.get('user_id'))
     otp = pyotp.parse_uri(data.url) # Extract the OTP info from the provided URI (secret, name, etc.)
 
     # Validate that the OTP URI corresponds to the user
@@ -103,9 +104,9 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 
 @router.post('/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupSMSIn):
-    user_id = get_verification_context(data.id)
-    user = get_object_or_404(User, id=user_id)
-    active_device = default_device(user)
+    context = get_verification_context(data.id)
+    user = get_object_or_404(User, id=context.get('user_id'))
+    active_device = Device.from_persistent_id(context.get('device_id'))
 
     if not user.twofa_enabled or user.twofa_method != 'sms':
         # User has 2FA disabled, raise an error
@@ -143,12 +144,9 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
 
 @router.post('/verify', response=TFAVerifyOut)
 def verify_2fa(request, data: TFAVerifyIn):
-    user_id = get_verification_context(data.id)
-    user = get_object_or_404(User, id=user_id)
-
-    # TODO: the device ID should be cached along with user ID in the verification context to avoid querying all devices.
-    # For convenience, we use 'devices_for_user' to get the user's devices.
-    device = list(devices_for_user(user=user))[-1]
+    context = get_verification_context(data.id)
+    user = get_object_or_404(User, id=context.get('user_id'))
+    device = Device.from_persistent_id(context.get('device_id'))
 
     verify_cached_otp(device, user, data.purpose.value, data.passcode)
 
