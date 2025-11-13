@@ -4,7 +4,7 @@ import pyotp
 
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
-from django_otp import devices_for_user
+from django.utils import timezone
 from django_otp.models import Device
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from ninja import Router
@@ -16,8 +16,8 @@ from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
-    verify_cached_otp, VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY, get_verification_context
-from cs_cas import settings
+    verify_cached_otp, VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY, get_context_or_session, \
+    set_user_session, set_refresh_cookie
 from myauth.schemas import *
 
 router = Router(tags=['TFA'])
@@ -30,7 +30,7 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
     The OTP URI should be used to generate a QR code for the user to scan with their authenticator app.
     """
-    context = get_verification_context(data.id)
+    context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
     active_device = Device.from_persistent_id(context.get('device_id'))
 
@@ -68,7 +68,7 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
 @router.post('/totp/confirm', response=TFAConfirmOut)
 def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
-    context = get_verification_context(data.id)
+    context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
     otp = pyotp.parse_uri(data.url) # Extract the OTP info from the provided URI (secret, name, etc.)
 
@@ -104,7 +104,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 
 @router.post('/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupSMSIn):
-    context = get_verification_context(data.id)
+    context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
     active_device = Device.from_persistent_id(context.get('device_id'))
 
@@ -142,9 +142,9 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
     }
 
 
-@router.post('/verify', response=TFAVerifyOut)
+@router.post('/verify', response=TokenOut)
 def verify_2fa(request, data: TFAVerifyIn):
-    context = get_verification_context(data.id)
+    context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
     device = Device.from_persistent_id(context.get('device_id'))
 
@@ -157,20 +157,17 @@ def verify_2fa(request, data: TFAVerifyIn):
     # Clear the verification session
     key_verif_context = VERIFICATION_CONTEXT_CACHE_KEY.format(id=data.id)
     key_verif_user = VERIFICATION_USER_CACHE_KEY.format(id=user.id)
-
     cache.delete_many([key_verif_context, key_verif_user])
 
     refresh = RefreshToken.for_user(user)
+    persistent = context.get('remember_me', False)
+
+    set_user_session(user, refresh, persistent)
 
     resp = Response({
         'access': str(refresh.access_token)
     })
-    resp.set_cookie(
-        key=settings.REFRESH_COOKIE_KEY,
-        value=str(refresh),
-        httponly=True,
-        secure=not settings.DEBUG,
-        samesite='Strict',
-    )
+
+    set_refresh_cookie(resp, refresh, persistent)
 
     return resp

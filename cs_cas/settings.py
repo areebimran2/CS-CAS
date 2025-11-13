@@ -184,6 +184,7 @@ NINJA_JWT = {
 }
 
 REFRESH_COOKIE_KEY = 'cscas-refresh'
+REFRESH_IDLE_TIMEOUT = timedelta(days=7)
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

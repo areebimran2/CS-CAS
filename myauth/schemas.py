@@ -68,7 +68,7 @@ class TFAVerifyIn(Schema):
     purpose: UnAuthPurpose
 
 
-class TFAVerifyOut(Schema):
+class TokenOut(Schema):
     access: str
 
 

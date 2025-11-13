@@ -1,24 +1,30 @@
 import hashlib
+from datetime import timedelta
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django_otp.plugins.otp_email.conf import settings
 from ninja import Router
+from ninja.responses import Response
 from ninja_extra import status
 from ninja_jwt.authentication import JWTAuth
+from ninja_jwt.tokens import RefreshToken
 from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
 from common.utils import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
-    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_verification_context, validate_new_password, \
-    not_implemented
+    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_context_or_session, validate_new_password, \
+    not_implemented, set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
 from myauth.schemas import *
 
 router = Router(tags=['Session'])
 User = get_user_model()
+
 
 @router.post('/login', response=LoginOut)
 def login(request, data: LoginIn):
@@ -29,7 +35,7 @@ def login(request, data: LoginIn):
     endpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.
     """
     user: Optional[User] = authenticate(username=data.email, password=data.password)
-    if user is None: # Invalid credentials
+    if user is None:  # Invalid credentials
         raise APIBaseError(
             title='Invalid credentials',
             status=status.HTTP_401_UNAUTHORIZED,
@@ -48,29 +54,94 @@ def login(request, data: LoginIn):
         'method': device
     }
 
-@router.post('/logout', response=MessageOut, auth=JWTAuth())
+
+@router.post('/logout', response=MessageOut)
 def logout(request):
     """
     Should revoke refresh token that is stored in an HTTP-only cookie on the client side.
 
     Also, deny-list the access token to prevent its further use until it naturally expires.
     """
-    not_implemented()
+    cookie = request.COOKIES.get(settings.REFRESH_COOKIE_KEY)
 
-@router.post('/logout', response=MessageOut, auth=JWTAuth())
+    if not cookie:
+        raise APIBaseError(
+            title='Refresh token missing',
+            detail='No refresh token cookie found in the request headers',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    token = RefreshToken(cookie)
+    user = get_object_or_404(User, id=token['uid'])
+
+    user_cache_key = SESSION_USER_CACHE_KEY.format(id=user.id)
+    cache.delete(user_cache_key)
+
+    resp = Response({
+        'message': 'Logged out successfully'
+    })
+
+    resp.delete_cookie(settings.REFRESH_COOKIE_KEY)
+
+    return resp
+
+
+@router.post('/refresh', response=TokenOut)
 def refresh(request):
     """
     Should issue a new access token using the refresh token stored in an HTTP-only cookie on the client side.
 
     Also, rotate the refresh token by issuing a new one and deny-list the access token.
     """
-    not_implemented()
+    cookie = request.COOKIES.get(settings.REFRESH_COOKIE_KEY)
+    if not cookie:
+        raise APIBaseError(
+            title='Refresh token missing',
+            detail='No refresh token cookie found in the request headers',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
 
+    token = RefreshToken(cookie)
+    session = get_context_or_session(token['uid'])
+
+    if not session:
+        raise APIBaseError(
+            title='Invalid refresh token',
+            detail='No session data found for the user embedded in the given refresh token',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if token['jti'] != session.get('jti') or token['sid'] != session.get('session_id'):
+        # May want to log these events for security auditing
+        message = 'old token reuse' if token['jti'] != session.get('jti') else 'old session attempt'
+        raise APIBaseError(
+            title='Invalid refresh token',
+            detail='Refresh token does not match the stored session data: ' + message,
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    user = get_object_or_404(User, id=token['uid'])
+    new_token = RefreshToken.for_user(get_object_or_404(User, id=token['uid']))
+
+    remaining_abs = max(0, token['exp'] - timezone.now().timestamp())
+    new_token.set_exp(from_time=timezone.now(), lifetime=timedelta(seconds=remaining_abs)) # Keep the original expiry
+
+    persistent = session.get('remember_me', False)
+
+    set_user_session(user, new_token, persistent, old=token) # Keep the original session ID
+
+    resp = Response({
+        'access': str(new_token.access_token)
+    })
+
+    set_refresh_cookie(resp, new_token, persistent)
+
+    return resp
 
 
 @router.post('/password/forgot', response=MessageOut)
 def forgot_password(request, data: ForgotPasswordIn):
-    user = User.objects.filter(email=data.email).first() # Do not reveal if the email exists or not
+    user = User.objects.filter(email=data.email).first()  # Do not reveal if the email exists or not
 
     if user:
         token = default_token_generator.make_token(user)
@@ -105,9 +176,10 @@ def forgot_password(request, data: ForgotPasswordIn):
         'message': 'If an account with that email exists, a password reset link has been sent.'
     }
 
+
 @router.post('/password/reset', response=MessageOut)
 def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAuthPurpose.RESET_PASSWORD):
-    context = get_verification_context(data.id)
+    context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
     device = default_device(user)
 
@@ -146,4 +218,3 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
     return {
         'message': 'Password has been reset successfully'
     }
-
