@@ -33,6 +33,13 @@ def login(request, data: LoginIn):
 
     If the user has not yet setup 2FA, then they must do so after this step by calling the appropriate 2FA setup
     endpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.
+
+
+    		- Flow is as follows:
+		  1. email+password+optional remember_me → `/api/auth/login` : gives back verification context id
+		     - If a user has not established an auth device, setup SMS through `/api/auth/2fa/sms/send` or TOTP by calling `/api/auth/2fa/totp/setup` → `/api/auth/2fa/totp/confirm`
+		  2. context id+purpose (login/reset) → `/api/auth/2fa/sms/send`: sends OTP
+		  3. passcode+purpose (login/reset) → `/api/auth/2fa/verify`: establishes login session
     """
     user: Optional[User] = authenticate(username=data.email, password=data.password)
     if user is None:  # Invalid credentials

@@ -2,7 +2,7 @@ Django==5.2.7
 psycopg[binary]==3.2.12
 django-pgtrigger==4.15.4
 django-phonenumber-field==8.3.0
-phonenumbers==9.0.17
+phonenumbers==9.0.19
 argon2-cffi==25.1.0
 django-ninja==1.4.5
 django-ninja-jwt==5.4.0

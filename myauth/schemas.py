@@ -7,6 +7,8 @@ from typing import Optional
 from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
+from myauth.models import UserPreference
+
 
 # Login endpoint schemas
 class Method(Schema):
@@ -127,15 +129,28 @@ class ChangeTFAMethodIn(Schema):
 
 
 # User info endpoint schemas
+class UserPrefSchema(ModelSchema):
+    class Meta:
+        model = UserPreference
+        fields = ['opt_in_enabled', 'notify_cabin_avail', 'notify_flash_sale', 'notify_release_request', 'fx_mode']
+        fields_optional = '__all__'
+
 class UserSchema(ModelSchema):
+    prefs: UserPrefSchema
+
     class Meta:
         model = get_user_model()
-        fields = ['first_name', 'middle_name', 'last_name', 'designation', 'email', 'phone', 'twofa_method']
+        fields = ['first_name', 'middle_name', 'last_name', 'designation', 'email', 'phone', 'twofa_method', 'twofa_enabled']
         fields_optional = ['middle_name']
 
     @staticmethod
     def resolve_phone(obj):
         return str(obj.phone)
+
+    @staticmethod
+    def resolve_prefs(obj):
+        pref, _ = UserPreference.objects.get_or_create(user=obj)
+        return pref
 
 
 class UserBasicUpdateSchema(ModelSchema):

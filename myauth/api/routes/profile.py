@@ -21,7 +21,7 @@ def profile(request):
     return user
 
 
-@router.patch('', response=UserSchema, auth=JWTAuth())
+@router.put('', response=UserSchema, auth=JWTAuth())
 def update_profile(request, data: PatchDict[UserBasicUpdateSchema]):
     user: User = request.auth
 

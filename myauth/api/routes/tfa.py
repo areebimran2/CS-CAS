@@ -17,7 +17,7 @@ from two_factor.utils import default_device
 from common.exceptions import APIBaseError
 from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     verify_cached_otp, VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY, get_context_or_session, \
-    set_user_session, set_refresh_cookie
+    set_user_session, set_refresh_cookie, set_verification_context
 from myauth.schemas import *
 
 router = Router(tags=['TFA'])
@@ -32,7 +32,7 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
     """
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
-    active_device = Device.from_persistent_id(context.get('device_id'))
+    active_device = context.get('device_id')
 
     if not user.twofa_enabled or user.twofa_method != 'totp':
         # User has 2FA disabled raise an error
@@ -44,10 +44,9 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
         )
 
     if active_device is not None:
-        device_type = active_device.__class__.__name__
         raise APIBaseError(
-            title='User already has an active device',
-            detail=f'Device type and set method is: {device_type} and {user.twofa_method} respectively (should match)',
+            title='Conflicting device found during TOTP setup',
+            detail='The specified user already has an active device',
             status=status.HTTP_409_CONFLICT,
         )
 
@@ -91,13 +90,17 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
         )
 
     # Successfully verified, create and save the TOTP device for the user
-    device, _ = TOTPDevice.objects.get_or_create(user=user)
+    device, _ = TOTPDevice.objects.create(user=user)
     secret_raw = base64.b32decode(otp.secret, casefold=True)
     device.key = binascii.hexlify(secret_raw).decode('utf-8')
     device.save()
 
+    # A new device is created, update the verification context to reflect the new device ID
+    new_context = {'device_id': device.persistent_id, 'remember_me': context.get('remember_me', False)}
+    new_context_id = set_verification_context(user, add_context=new_context)
+
     return {
-        'id': data.id,
+        'id': new_context_id,
         'message': 'TOTP device confirmed',
     }
 
@@ -105,8 +108,9 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 @router.post('/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupSMSIn):
     context = get_context_or_session(data.id)
+    context_id = data.id
     user = get_object_or_404(User, id=context.get('user_id'))
-    active_device = Device.from_persistent_id(context.get('device_id'))
+    active_device = Device.from_persistent_id(context.get('device_id')) if context.get('device_id') else None
 
     if not user.twofa_enabled or user.twofa_method != 'sms':
         # User has 2FA disabled, raise an error
@@ -125,10 +129,15 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
         )
 
     # Create a record to maintain the User's OTP Phone Device
-    device, _ = PhoneDevice.objects.get_or_create(
+    device, created = PhoneDevice.objects.get_or_create(
         user=user,
         number=user.phone,
     )
+
+    # If a new device was created, update the verification context to reflect the new device ID
+    if created:
+        new_context = {'device_id': device.persistent_id, 'remember_me': context.get('remember_me', False)}
+        context_id = set_verification_context(user, add_context=new_context)
 
     key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
     key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
@@ -137,7 +146,7 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
     generate_cached_challenge(device, key_hash, key_attempts)
 
     return {
-        'id': data.id,
+        'id': context_id,
         'message': 'SMS sent to registered phone number',
     }
 
@@ -146,7 +155,7 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
 def verify_2fa(request, data: TFAVerifyIn):
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
-    device = Device.from_persistent_id(context.get('device_id'))
+    device = Device.from_persistent_id(context.get('device_id')) if context.get('device_id') else None
 
     verify_cached_otp(device, user, data.purpose.value, data.passcode)
 
