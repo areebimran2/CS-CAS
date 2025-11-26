@@ -28,6 +28,8 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
 
+        UserPreference.objects.create(user=user)
+
         return user
 
     create_user.alters_data = True
@@ -125,7 +127,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.status = UserStatus.SUSPENDED
 
 class UserPreference(models.Model):
-    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE, related_name='preferences')
     fx_mode = models.TextField(db_default='manual', choices=[('manual', 'Manual'), ('live', 'Live')], null=False)
     opt_in_enabled = models.BooleanField(db_default=False, null=False)
     notify_cabin_avail = models.BooleanField(db_default=True, null=False)

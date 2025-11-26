@@ -22,12 +22,22 @@ def profile(request):
 
 
 @router.put('', response=UserSchema, auth=JWTAuth())
-def update_profile(request, data: PatchDict[UserBasicUpdateSchema]):
+def update_profile(request, data: UserUpdateSchema):
     user: User = request.auth
+    user_prefs: UserPreference = user.preferences
 
-    for attr, value in data.items():
-        setattr(user, attr, value)
+    cleaned = data.model_dump(exclude_unset=True)
+    prefs = cleaned.pop('prefs', {})
 
+    # Update basic user fields
+    for field in cleaned:
+        setattr(user, field, cleaned[field])
+
+    # Update user preferences
+    for pref in prefs:
+        setattr(user_prefs, pref, prefs[pref])
+
+    user_prefs.save()
     user.save()
 
     return user

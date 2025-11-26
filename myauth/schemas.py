@@ -136,7 +136,7 @@ class UserPrefSchema(ModelSchema):
         fields_optional = '__all__'
 
 class UserSchema(ModelSchema):
-    prefs: UserPrefSchema
+    preferences: UserPrefSchema
 
     class Meta:
         model = get_user_model()
@@ -147,16 +147,14 @@ class UserSchema(ModelSchema):
     def resolve_phone(obj):
         return str(obj.phone)
 
-    @staticmethod
-    def resolve_prefs(obj):
-        pref, _ = UserPreference.objects.get_or_create(user=obj)
-        return pref
 
+class UserUpdateSchema(ModelSchema):
+    preferences: Optional[UserPrefSchema] = None
 
-class UserBasicUpdateSchema(ModelSchema):
     class Meta:
         model = get_user_model()
         fields = ['first_name', 'middle_name', 'last_name', 'designation']
+        fields_optional = '__all__'
 
 
 # Miscellaneous schemas
