@@ -17,13 +17,23 @@ User = get_user_model()
 
 @router.get('', response=UserSchema, auth=JWTAuth())
 def profile(request):
-    user: User = request.auth
+    user: User = request.auth # Assume that every user has preferences
+
+    # Ensure user preferences exist (safety check), potentially remove later
+    if getattr(user, 'preferences', None) is None:
+        setattr(user, 'preferences', UserPreference.objects.create(user=user))
+
     return user
 
 
 @router.put('', response=UserSchema, auth=JWTAuth())
 def update_profile(request, data: UserUpdateSchema):
     user: User = request.auth
+
+    # Ensure user preferences exist (safety check), potentially remove later
+    if getattr(user, 'preferences', None) is None:
+        setattr(user, 'preferences', UserPreference.objects.create(user=user))
+
     user_prefs: UserPreference = user.preferences
 
     cleaned = data.model_dump(exclude_unset=True)

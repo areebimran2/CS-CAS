@@ -79,6 +79,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(
         _("superuser status"),
         default=False,
+        db_default=False,
         help_text=_(
             "Designates that this user has all permissions without "
             "explicitly assigning them."
@@ -87,6 +88,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(
         _("staff status"),
         default=False,
+        db_default=False,
         help_text=_("Designates whether the user can log into this admin site."),
     )
 
