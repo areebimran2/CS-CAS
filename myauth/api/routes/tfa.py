@@ -34,7 +34,7 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
     user = get_object_or_404(User, id=context.get('user_id'))
     active_device = context.get('device_id')
 
-    if not user.twofa_enabled or user.twofa_method != 'totp':
+    if not user.twofa_enabled or user.twofa_method != TFAMethod.TOTP:
         # User has 2FA disabled raise an error
         # May also want to raise an error if the user has a different 2FA method enabled
         raise APIBaseError(
@@ -90,7 +90,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
         )
 
     # Successfully verified, create and save the TOTP device for the user
-    device, _ = TOTPDevice.objects.create(user=user)
+    device, _ = TOTPDevice.objects.create(user=user, name='default')
     secret_raw = base64.b32decode(otp.secret, casefold=True)
     device.key = binascii.hexlify(secret_raw).decode('utf-8')
     device.save()
@@ -106,13 +106,13 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 
 
 @router.post('/sms/send', response=TFAConfirmOut)
-def send_2fa_sms(request, data: TFASetupSMSIn):
+def send_2fa_sms(request, data: TFASetupSMSIn, purpose: UnAuthPurpose = UnAuthPurpose.LOGIN):
     context = get_context_or_session(data.id)
     context_id = data.id
     user = get_object_or_404(User, id=context.get('user_id'))
     active_device = Device.from_persistent_id(context.get('device_id')) if context.get('device_id') else None
 
-    if not user.twofa_enabled or user.twofa_method != 'sms':
+    if not user.twofa_enabled or user.twofa_method != TFAMethod.SMS:
         # User has 2FA disabled, raise an error
         # May also want to raise an error if the user has a different 2FA method enabled
         raise APIBaseError(
@@ -134,15 +134,19 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
         number=user.phone,
     )
 
-    # If a new device was created, update the verification context to reflect the new device ID
+    # If a new phone device was created update the verification context to reflect the new device ID
     if created:
+        device.name = 'default'
+        device.confirmed = False
+        device.save()
+
         new_context = {'device_id': device.persistent_id, 'remember_me': context.get('remember_me', False)}
         context_id = set_verification_context(user, add_context=new_context)
 
-    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
+    key_hash = OTP_HASH_CACHE_KEY.format(purpose=purpose.value, id=context_id)
+    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=purpose.value, id=context_id)
 
-    # Send the OTP SMS to the user's phone
+    # Send the OTP SMS to the phone of the user attached to the given verification context
     generate_cached_challenge(device, key_hash, key_attempts)
 
     return {
@@ -152,15 +156,32 @@ def send_2fa_sms(request, data: TFASetupSMSIn):
 
 
 @router.post('/verify', response=TokenOut)
-def verify_2fa(request, data: TFAVerifyIn):
+def verify_2fa(request, data: TFAVerifyIn, purpose: UnAuthPurpose = UnAuthPurpose.LOGIN):
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
-    device = Device.from_persistent_id(context.get('device_id')) if context.get('device_id') else None
 
-    verify_cached_otp(device, user, data.purpose.value, data.passcode)
+    if context.get('device_id'):
+        # The user has an active device in the context
+        device = Device.from_persistent_id(context.get('device_id'))
+    elif user.twofa_method == TFAMethod.SMS:
+        # No active device in context, but they may have a pending phone device (not possible for TOTP as the device
+        # would have been created and confirmed simultaneously during setup)
+        device = PhoneDevice.objects.filter(user=user, number=user.phone).first()
+    else:
+        device = None
 
-    if default_device(user) is None:
-        device.name = 'default'
+    if device is None or device.user != user:
+        raise APIBaseError(
+            title='Encountered 2FA device error',
+            detail='The provided 2FA device is invalid or does not belong to the user.',
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    verify_cached_otp(device, data.id, purpose.value, data.passcode)
+
+    if not device.confirmed:
+        # Confirm the device if it was not already confirmed
+        device.confirmed = True
         device.save()
 
     # Clear the verification session

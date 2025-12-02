@@ -4,9 +4,11 @@ from enum import Enum
 
 from typing import Optional
 
-from pydantic import EmailStr
+from ninja_extra import status
+from pydantic import EmailStr, model_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
+from common.exceptions import APIBaseError
 from myauth.models import UserPreference
 
 
@@ -36,7 +38,6 @@ class UnAuthPurpose(str, Enum):
     # Represents purposes that correspond to unauthenticated actions
     # Add more OTP purposes as needed
     LOGIN = 'login'
-    RESET_PASSWORD = 'reset-password'
 
 
 class TFASetupTOTPIn(Schema):
@@ -56,7 +57,7 @@ class TFAConfirmTOTPIn(Schema):
 
 class TFASetupSMSIn(Schema):
     id: str
-    purpose: UnAuthPurpose
+    # purpose: UnAuthPurpose
 
 
 class TFAConfirmOut(Schema):
@@ -67,7 +68,7 @@ class TFAConfirmOut(Schema):
 class TFAVerifyIn(Schema):
     id: str
     passcode: str
-    purpose: UnAuthPurpose
+    # purpose: UnAuthPurpose
 
 
 class TokenOut(Schema):
@@ -82,7 +83,6 @@ class ResetPasswordIn(Schema):
     id: str
     token: str
     new_password: str
-    passcode: str
 
 
 # Authenticated user OTP security schemas
@@ -116,6 +116,18 @@ class ChangePhoneIn(Schema):
 class ChangePasswordIn(Schema):
     passcode: str
     new_password: str
+    confirm_password: str
+
+    @model_validator(mode='after')
+    def passwords_match(self):
+        if self.new_password != self.confirm_password:
+            raise APIBaseError(
+                title='Password mismatch',
+                detail='The new password and confirm password do not match',
+                status=status.HTTP_400_BAD_REQUEST,
+                errors=[{'field': 'confirm_password', 'message': 'Does not match new password'}],
+            )
+        return self
 
 
 class ChangeEmailIn(Schema):

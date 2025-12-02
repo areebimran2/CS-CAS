@@ -11,15 +11,13 @@ from django_otp.plugins.otp_email.conf import settings
 from ninja import Router
 from ninja.responses import Response
 from ninja_extra import status
-from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import RefreshToken
 from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
-from common.utils import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
-    verify_cached_otp, RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
+from common.utils import RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
     VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_context_or_session, validate_new_password, \
-    not_implemented, set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
+    set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
 from myauth.schemas import *
 
 router = Router(tags=['Session'])
@@ -185,13 +183,9 @@ def forgot_password(request, data: ForgotPasswordIn):
 
 
 @router.post('/password/reset', response=MessageOut)
-def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAuthPurpose.RESET_PASSWORD):
+def reset_password(request, data: ResetPasswordIn):
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
-    device = default_device(user)
-
-    # Verify the OTP passcode, do not clear the cached OTP data yet in case other verifications fail
-    verify_cached_otp(device, user, purpose.value, data.passcode, clear=False)
 
     key_reset_password = RESET_TOKEN_CACHE_KEY.format(id=user.id)
 
@@ -211,16 +205,12 @@ def reset_password(request, data: ResetPasswordIn, purpose: UnAuthPurpose = UnAu
     user.set_password(data.new_password)
     user.save()
 
-    # OTP cached values are only cleared after successful password reset
-    key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
-    key_attempts = OTP_ATTEMPT_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
-
     # Clear the verification session
     key_verif_context = VERIFICATION_CONTEXT_CACHE_KEY.format(id=data.id)
     key_verif_user = VERIFICATION_USER_CACHE_KEY.format(id=user.id)
 
     # Clear the cache on successful verification
-    cache.delete_many([key_hash, key_attempts, key_reset_password, key_verif_context, key_verif_user])
+    cache.delete_many([key_reset_password, key_verif_context, key_verif_user])
 
     return {
         'message': 'Password has been reset successfully'
