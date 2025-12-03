@@ -173,7 +173,7 @@ def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpos
     }
 
 
-@router.post('/2fa-method/change', response=MessageOut, auth=JWTAuth())
+@router.post('/tfa-method/change', response=MessageOut, auth=JWTAuth())
 def tfa_method_change(request, data: ChangeTFAMethodIn, purpose: AuthPurpose = AuthPurpose.CHANGE_TFA_METHOD):
     # This implementation is unfinished, and requires further checks to ensure proper TFA setup.
     # TODO: Need to re-setup TFA after changing method
