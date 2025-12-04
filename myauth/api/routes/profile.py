@@ -16,7 +16,7 @@ router = Router(tags=['Session'])
 User = get_user_model()
 
 
-@router.get('', response=UserSchema, auth=JWTAuth())
+@router.get('', response=UserProfileSchema, auth=JWTAuth())
 def profile(request):
     user: User = request.auth # Assume that every user has preferences
 
@@ -27,8 +27,8 @@ def profile(request):
     return user
 
 
-@router.put('', response=UserSchema, auth=JWTAuth())
-def update_profile(request, data: UserUpdateSchema):
+@router.put('', response=UserProfileSchema, auth=JWTAuth())
+def update_profile(request, data: UserProfileUpdateSchema):
     user: User = request.auth
 
     # Ensure user preferences exist (safety check), potentially remove later
