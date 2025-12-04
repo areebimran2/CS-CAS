@@ -1,7 +1,8 @@
 from ninja import Router
 
 from common.utils import not_implemented
-from myauth.models import UserPreference, UserRole
+from myauth.models import UserPreference
+from myadmin.models import UserRole
 from myadmin.schemas import *
 
 router = Router(tags=['Users'])
@@ -16,9 +17,9 @@ def list_users(request):
 def create_user(request, payload: CreateUserIn):
     payload_dict = payload.dict()
     role_id = payload_dict.pop('role_id')
-    user = User.objects.create(**payload_dict)
-    UserPreference.objects.create(user=user)
-    UserRole.objects.create(user=user, role_id=role_id)
+    user = User.objects.create(**payload_dict)          # Create the user
+    UserPreference.objects.create(user=user)            # Create user preferences
+    UserRole.objects.create(user=user, role_id=role_id) # Establish user-role relationship
     return user
 
 

@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('myauth', '0001_initial'),
+        ('myadmin', '0001_initial'),
     ]
 
     operations = [

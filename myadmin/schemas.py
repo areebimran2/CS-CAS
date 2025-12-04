@@ -8,7 +8,7 @@ from ninja.orm import register_field
 from pydantic import EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
-from myauth.models import Role
+from myadmin.models import Role
 
 
 class Status(str, Enum):
@@ -33,7 +33,7 @@ class UserRoleSchema(ModelSchema):
         fields = ['id', 'name']
 
 class CreateUserOut(ModelSchema):
-    roles: List[UserRoleSchema]
+    roles: List[UserRoleSchema] # Reverse reference to roles
 
     class Meta:
         model = get_user_model()

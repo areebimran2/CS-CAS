@@ -50,35 +50,6 @@ class UserManager(BaseUserManager):
 
     create_superuser.alters_data = True
 
-class Permission(models.Model):
-    key = models.TextField(primary_key=True)
-    description = models.TextField(null=True)
-
-    class Meta:
-        db_table = 'permissions'
-
-class Role(models.Model):
-    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
-    name = models.TextField(null=False)
-    description = models.TextField(null=True)
-    created_at = models.DateTimeField(db_default=TxNow(), null=False)
-    updated_at = models.DateTimeField(db_default=TxNow(), null=False)
-
-    # Many-to-many role→permission
-    permissions = models.ManyToManyField(Permission, related_name='roles', through='RolePermission')
-
-    class Meta:
-        db_table = 'roles'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['name'],
-                name='roles_name_key'
-            ),
-        ]
-        triggers = [
-            set_updated_at_trg('trg_roles_updated'),
-        ]
-
 class User(AbstractBaseUser, PermissionsMixin):
     # AbstractBaseUser fields that are not used
     last_login = None
@@ -103,9 +74,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.TextField(null=False)
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
     updated_at = models.DateTimeField(db_default=TxNow(), null=False)
-
-    # Many-to-many user→role
-    roles = models.ManyToManyField(Role, related_name='users', through='UserRole')
 
     # Django specific fields for Django admin control
     is_superuser = models.BooleanField(
@@ -176,19 +144,3 @@ class UserPreference(models.Model):
                 name='user_prefs_fx_mode_check',
             )
         ]
-
-class UserRole(models.Model):
-    user = models.ForeignKey('myauth.User', on_delete=models.CASCADE, db_index=False)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, db_index=False)
-    pk = models.CompositePrimaryKey('user_id', 'role_id')
-
-    class Meta:
-        db_table = 'user_roles'
-
-class RolePermission(models.Model):
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, db_index=False)
-    perm_key = models.ForeignKey(Permission, on_delete=models.CASCADE, db_column='perm_key', db_index=False)
-    pk = models.CompositePrimaryKey('role_id', 'perm_key')
-
-    class Meta:
-        db_table = 'role_permissions'
