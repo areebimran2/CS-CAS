@@ -9,7 +9,7 @@ from two_factor.utils import default_device
 from common.exceptions import APIBaseError
 from common.utils import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW, PHONE_CHANGE_OLD_VERIFIED, \
-    PHONE_CHANGE_NEW_AWAITING, validate_new_password, generate_cached_code, verify_cached_code
+    PHONE_CHANGE_NEW_AWAITING, validate_user_password, generate_cached_code, verify_cached_code
 from myauth.schemas import *
 
 router = Router(tags=['Session'])
@@ -147,11 +147,11 @@ def verify_new_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
 @router.post('/password/change', response=MessageOut, auth=JWTAuth())
 def password_change(request, data: ChangePasswordIn, purpose: AuthPurpose = AuthPurpose.CHANGE_PASSWORD):
     user: User = request.auth
-    validate_new_password(user, data.new_password)
+    validate_user_password(data.password, user=user)
 
     verify_cached_code(user, purpose.value, data.passcode)
 
-    user.set_password(data.new_password)
+    user.set_password(data.password)
     user.save()
 
     return {

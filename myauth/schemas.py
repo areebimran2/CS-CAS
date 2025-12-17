@@ -82,7 +82,7 @@ class ForgotPasswordIn(Schema):
 class ResetPasswordIn(Schema):
     id: str
     token: str
-    new_password: str
+    password: str
 
 
 # Authenticated user OTP security schemas
@@ -115,17 +115,17 @@ class ChangePhoneIn(Schema):
 
 class ChangePasswordIn(Schema):
     passcode: str
-    new_password: str
-    confirm_password: str
+    password: str
+    confirm: str
 
     @model_validator(mode='after')
     def passwords_match(self):
-        if self.new_password != self.confirm_password:
+        if self.password != self.confirm:
             raise APIBaseError(
                 title='Password mismatch',
-                detail='The new password and confirm password do not match',
+                detail='The given password and confirm password do not match',
                 status=status.HTTP_400_BAD_REQUEST,
-                errors=[{'field': 'confirm_password', 'message': 'Does not match new password'}],
+                errors=[{'field': 'confirm', 'message': 'Does not match given password'}],
             )
         return self
 

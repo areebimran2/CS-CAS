@@ -15,9 +15,11 @@ class Status(str, Enum):
     ACTIVE = 'active'
     SUSPENDED = 'suspended'
 
+
 register_field('PostgresEnumField', Status)
 
-class CreateUserIn(Schema):
+
+class UserIn(Schema):
     first_name: str
     middle_name: Optional[str] = None
     last_name: str
@@ -27,13 +29,15 @@ class CreateUserIn(Schema):
     role_id: uuid.UUID
     status: Status
 
+
 class UserRoleSchema(ModelSchema):
     class Meta:
         model = Role
         fields = ['id', 'name']
 
-class CreateUserOut(ModelSchema):
-    roles: List[UserRoleSchema] # Reverse reference to roles
+
+class UserOut(ModelSchema):
+    roles: List[UserRoleSchema]  # Reverse reference to roles
 
     class Meta:
         model = get_user_model()

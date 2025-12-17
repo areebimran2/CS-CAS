@@ -353,12 +353,12 @@ def set_refresh_cookie(response: Response, token: Token, remember_me: bool) -> N
     )
 
 
-def validate_new_password(user: User, password: str) -> None:
+def validate_user_password(password: str, user: User = None) -> None:
     """
-    Validates the provided password against the user's stored password.
+    Validates the provided password. If a user is provided, it does so against the user's stored password.
 
-    :param user: The User instance
     :param password: The password to validate
+    :param user: The User instance for which this password is being set
     :return: None
     :raises APIBaseError: If the password does not meet the policy requirements
     """
@@ -369,7 +369,7 @@ def validate_new_password(user: User, password: str) -> None:
             title='Password validation error',
             detail='The provided new password does not meet the password policy requirements',
             status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            errors=[{'field': 'new_password', 'messages': e.messages}],
+            errors=[{'field': 'password', 'messages': e.messages}],
         )
 
 

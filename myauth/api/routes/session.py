@@ -16,7 +16,7 @@ from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
 from common.utils import RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
-    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_context_or_session, validate_new_password, \
+    VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_context_or_session, validate_user_password, \
     set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
 from myauth.schemas import *
 
@@ -200,9 +200,9 @@ def reset_password(request, data: ResetPasswordIn):
             errors={'field': 'token', 'message': 'Invalid or expired token'},
         )
 
-    validate_new_password(user, data.new_password)
+    validate_user_password(data.password, user=user)
 
-    user.set_password(data.new_password)
+    user.set_password(data.password)
     user.save()
 
     # Clear the verification session
