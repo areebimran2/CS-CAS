@@ -31,16 +31,17 @@ def create_user(request, payload: UserIn):
 @router.put('/{user_id}', response=UserOut)
 def update_user(request, payload: PatchDict[UserIn], user_id: str):
     user = User.objects.get(id=user_id)
-    validate_user_password(payload['password'], user=user)
+    if payload.get('password') is not None:
+        validate_user_password(payload['password'], user=user)
 
     data = dict(payload)
     role_id = data.pop('role_id')
 
     # Update user-role relationship if role_id is provided
+    # Note: This will replace existing roles with the new one
     if role_id is not None:
-        user_role = get_object_or_404(UserRole, user=user)
-        user_role.role_id = role_id
-        user_role.save()
+        role = get_object_or_404(Role, id=role_id)
+        user.roles.set([role])
 
     for attr, value in data.items():
         setattr(user, attr, value)
@@ -49,6 +50,17 @@ def update_user(request, payload: PatchDict[UserIn], user_id: str):
 
     return user
 
-@router.post('/{user_id}/suspend')
+@router.get('/{user_id}', response=UserOut)
+def get_user(request, user_id: str):
+    user = get_object_or_404(User, id=user_id)
+    return user
+
+@router.post('/{user_id}/suspend', response=UserOut)
 def suspend_user(request, user_id: str):
-    return not_implemented()
+    user = get_object_or_404(User, id=user_id)
+    user.is_active(False)
+
+    # TODO: Need to clear user sessions and related cached records (pending actions, OTPs, etc.)
+
+    user.save()
+    return user
