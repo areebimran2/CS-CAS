@@ -31,6 +31,17 @@ class UserIn(Schema):
     role_id: uuid.UUID
     status: Status
 
+    @model_validator(mode='after')
+    def validate_role(self):
+        if not Role.objects.filter(id=self.role_id).exists():
+            raise APIBaseError(
+                title='Invalid role',
+                detail='The specified role does not exist',
+                status=status.HTTP_400_BAD_REQUEST,
+                errors=[{'field': 'role_id', 'message': 'No role with this ID'}],
+            )
+        return self
+
 
 class UserRoleSchema(ModelSchema):
     class Meta:

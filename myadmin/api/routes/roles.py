@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from ninja import Router
+from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
@@ -29,8 +29,24 @@ def create_role(request, payload: RoleIn):
 
 
 @router.put('/{role_id}')
-def update_role(request, role_id: str):
-    return not_implemented()
+def update_role(request, payload: PatchDict[RoleIn], role_id: str):
+    role = Role.objects.get(id=role_id)
+
+    data = dict(payload)
+    perms= data.pop('permissions', None)
+
+    # Update role permission set if role_id is provided
+    # Note: The given permission set will replace ALL existing permissions
+    if perms is not None:
+        perms_qs = Permission.objects.filter(key__in=perms)
+        role.permissions.set(perms_qs)
+
+    for attr, value in data.items():
+        setattr(role, attr, value)
+
+    role.save()
+
+    return role
 
 @router.get('/{role_id}', response=RoleOut)
 def get_role(request, role_id: str):

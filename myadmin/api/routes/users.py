@@ -31,11 +31,15 @@ def create_user(request, payload: UserIn):
 @router.put('/{user_id}', response=UserOut)
 def update_user(request, payload: PatchDict[UserIn], user_id: str):
     user = User.objects.get(id=user_id)
-    if payload.get('password') is not None:
-        validate_user_password(payload['password'], user=user)
 
     data = dict(payload)
-    role_id = data.pop('role_id')
+    password = data.pop('password', None)
+    role_id = data.pop('role_id', None)
+
+    # Update password if provided
+    if password is not None:
+        validate_user_password(password, user=user)
+        user.set_password(password)
 
     # Update user-role relationship if role_id is provided
     # Note: This will replace existing roles with the new one
