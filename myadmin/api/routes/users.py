@@ -11,25 +11,38 @@ from myadmin.schemas import *
 router = Router(tags=['Users'])
 User = get_user_model()
 
+
 @router.get('', response=NinjaPaginationResponseSchema[UserOut])
 @paginate()
 def list_users(request):
+    """
+    Provides a paginated list of all users in the system.
+
+    Note: This endpoint does not apply any filters; it returns all users. For production use, consider adding
+    filtering options.
+    """
     return User.objects.all()
 
 
 @router.post('', response=UserOut)
 def create_user(request, payload: UserIn):
+    """
+    Create a new user along with their preferences and role association.
+    """
     payload_dict = payload.dict()
     role_id = payload_dict.pop('role_id')
-    validate_user_password(payload_dict['password'])    # Validate password
-    user = User.objects.create(**payload_dict)          # Create the user
-    UserPreference.objects.create(user=user)            # Create user preferences
-    UserRole.objects.create(user=user, role_id=role_id) # Establish user-role relationship
+    validate_user_password(payload_dict['password'])  # Validate password
+    user = User.objects.create(**payload_dict)  # Create the user
+    UserPreference.objects.create(user=user)  # Create user preferences
+    UserRole.objects.create(user=user, role_id=role_id)  # Establish user-role relationship
     return user
 
 
 @router.put('/{user_id}', response=UserOut)
 def update_user(request, payload: PatchDict[UserIn], user_id: str):
+    """
+    Update an existing user's details, including password and role association.
+    """
     user = User.objects.get(id=user_id)
 
     data = dict(payload)
@@ -54,13 +67,21 @@ def update_user(request, payload: PatchDict[UserIn], user_id: str):
 
     return user
 
+
 @router.get('/{user_id}', response=UserOut)
 def get_user(request, user_id: str):
+    """
+    Retrieve detailed information about a specific user by their ID.
+    """
     user = get_object_or_404(User, id=user_id)
     return user
 
+
 @router.post('/{user_id}/suspend', response=UserOut)
 def suspend_user(request, user_id: str):
+    """
+    Suspend a user account, disabling their access to the system.
+    """
     user = get_object_or_404(User, id=user_id)
     user.is_active(False)
 

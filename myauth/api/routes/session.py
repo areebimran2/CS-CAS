@@ -33,11 +33,13 @@ def login(request, data: LoginIn):
     endpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.
 
 
-    		- Flow is as follows:
-		  1. email+password+optional remember_me → `/api/auth/login` : gives back verification context id
-		     - If a user has not established an auth device, setup SMS through `/api/auth/2fa/sms/send` or TOTP by calling `/api/auth/2fa/totp/setup` → `/api/auth/2fa/totp/confirm`
-		  2. context id+purpose (login/reset) → `/api/auth/2fa/sms/send`: sends OTP
-		  3. passcode+purpose (login/reset) → `/api/auth/2fa/verify`: establishes login session
+    Flow is as follows:
+
+	    1. email+password+optional remember_me → /api/auth/login : gives back verification context id
+                - If a user has not established an auth device, setup SMS through /api/auth/2fa/sms/send or
+                  TOTP by calling /api/auth/2fa/totp/setup → /api/auth/2fa/totp/confirm
+	    2. context id+purpose (login/reset) → /api/auth/2fa/sms/send: sends OTP
+	    3. passcode+purpose (login/reset) → /api/auth/2fa/verify: establishes login session
     """
     user: Optional[User] = authenticate(username=data.email, password=data.password)
     if user is None:  # Invalid credentials
@@ -63,9 +65,6 @@ def login(request, data: LoginIn):
 @router.post('/logout', response=MessageOut)
 def logout(request):
     """
-    Should revoke refresh token that is stored in an HTTP-only cookie on the client side.
-
-    Also, deny-list the access token to prevent its further use until it naturally expires.
     """
     cookie = request.COOKIES.get(settings.REFRESH_COOKIE_KEY)
 
@@ -94,9 +93,7 @@ def logout(request):
 @router.post('/refresh', response=TokenOut)
 def refresh(request):
     """
-    Should issue a new access token using the refresh token stored in an HTTP-only cookie on the client side.
-
-    Also, rotate the refresh token by issuing a new one and deny-list the access token.
+    Refresh the access token using a valid refresh token from cookies.
     """
     cookie = request.COOKIES.get(settings.REFRESH_COOKIE_KEY)
     if not cookie:
@@ -146,6 +143,9 @@ def refresh(request):
 
 @router.post('/password/forgot', response=MessageOut)
 def forgot_password(request, data: ForgotPasswordIn):
+    """
+    Initiate the password reset process by sending a reset link to the user's email.
+    """
     user = User.objects.filter(email=data.email).first()  # Do not reveal if the email exists or not
 
     if user:
@@ -184,6 +184,9 @@ def forgot_password(request, data: ForgotPasswordIn):
 
 @router.post('/password/reset', response=MessageOut)
 def reset_password(request, data: ResetPasswordIn):
+    """
+    Complete the password reset process by verifying the token and setting a new password.
+    """
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
 

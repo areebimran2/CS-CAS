@@ -67,6 +67,9 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
 @router.post('/totp/confirm', response=TFAConfirmOut)
 def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
+    """
+    Confirm TOTP 2FA setup by verifying the provided passcode against the TOTP secret.
+    """
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
     otp = pyotp.parse_uri(data.url) # Extract the OTP info from the provided URI (secret, name, etc.)
@@ -107,6 +110,9 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 
 @router.post('/sms/send', response=TFAConfirmOut)
 def send_2fa_sms(request, data: TFASetupSMSIn, purpose: UnAuthPurpose = UnAuthPurpose.LOGIN):
+    """
+    Send an OTP SMS to the user's registered phone number for SMS 2FA verification.
+    """
     context = get_context_or_session(data.id)
     context_id = data.id
     user = get_object_or_404(User, id=context.get('user_id'))
@@ -157,6 +163,9 @@ def send_2fa_sms(request, data: TFASetupSMSIn, purpose: UnAuthPurpose = UnAuthPu
 
 @router.post('/verify', response=TokenOut)
 def verify_2fa(request, data: TFAVerifyIn, purpose: UnAuthPurpose = UnAuthPurpose.LOGIN):
+    """
+    Verify the provided 2FA passcode and establish a user session upon successful verification.
+    """
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
 

@@ -15,11 +15,17 @@ User = get_user_model()
 @router.get('', response=NinjaPaginationResponseSchema[RoleOut])
 @paginate()
 def list_roles(request):
+    """
+    Provides a paginated list of all roles and their assigned permissions in the system.
+    """
     return Role.objects.all()
 
 
 @router.post('', response=RoleOut)
 def create_role(request, payload: RoleIn):
+    """
+    Create a new role along with its associated permissions.
+    """
     payload_dict = payload.dict()
     permissions = payload_dict.pop('permissions')
     role = Role.objects.create(**payload_dict)                  # Create the Role
@@ -30,6 +36,9 @@ def create_role(request, payload: RoleIn):
 
 @router.put('/{role_id}')
 def update_role(request, payload: PatchDict[RoleIn], role_id: str):
+    """
+    Update an existing role's details, including its associated permissions.
+    """
     role = Role.objects.get(id=role_id)
 
     data = dict(payload)
@@ -50,5 +59,8 @@ def update_role(request, payload: PatchDict[RoleIn], role_id: str):
 
 @router.get('/{role_id}', response=RoleOut)
 def get_role(request, role_id: str):
+    """
+    Retrieve a specific role by its ID.
+    """
     role = get_object_or_404(Role, id=role_id)
     return role

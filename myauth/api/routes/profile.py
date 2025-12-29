@@ -12,12 +12,15 @@ from common.utils import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, \
     PHONE_CHANGE_NEW_AWAITING, validate_user_password, generate_cached_code, verify_cached_code
 from myauth.schemas import *
 
-router = Router(tags=['Session'])
+router = Router(tags=['Profile'])
 User = get_user_model()
 
 
 @router.get('', response=UserProfileSchema, auth=JWTAuth())
 def profile(request):
+    """
+    Retrieve the authenticated user's profile information, including preferences.
+    """
     user: User = request.auth # Assume that every user has preferences
 
     # Ensure user preferences exist (safety check), potentially remove later
@@ -29,6 +32,9 @@ def profile(request):
 
 @router.put('', response=UserProfileSchema, auth=JWTAuth())
 def update_profile(request, data: UserProfileUpdateSchema):
+    """
+    Update the authenticated user's profile information, including preferences.
+    """
     user: User = request.auth
 
     # Ensure user preferences exist (safety check), potentially remove later
@@ -38,7 +44,7 @@ def update_profile(request, data: UserProfileUpdateSchema):
     user_prefs: UserPreference = user.preferences
 
     cleaned = data.model_dump(exclude_unset=True)
-    prefs = cleaned.pop('prefs', {})
+    prefs = cleaned.pop('preferences', {})
 
     # Update basic user fields
     for field in cleaned:
@@ -56,6 +62,9 @@ def update_profile(request, data: UserProfileUpdateSchema):
 
 @router.post('/security/sms/send', response=MessageOut, auth=JWTAuth())
 def secure_action(request, data: SecuritySetupIn):
+    """
+    Send an OTP SMS to the user's registered phone number for security-sensitive actions.
+    """
     user: User = request.auth
 
     key_hash = OTP_HASH_CACHE_KEY.format(purpose=data.purpose.value, id=user.id)
@@ -71,6 +80,9 @@ def secure_action(request, data: SecuritySetupIn):
 
 @router.post('/phone/verify-old', response=MessageOut, auth=JWTAuth())
 def verify_old_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPurpose.VERIFY_OLD_PHONE):
+    """
+    Verify the user's old phone number as stage 1 of the phone number change process.
+    """
     user: User = request.auth
 
     verify_cached_code(user, purpose.value, data.passcode)
@@ -85,6 +97,9 @@ def verify_old_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
 
 @router.post('/phone/change', response=MessageOut, auth=JWTAuth())
 def change_phone(request, data: ChangePhoneIn, purpose: AuthPurpose = AuthPurpose.VERIFY_NEW_PHONE):
+    """
+    Initiate stage 2 of the phone number change process by sending an OTP to the new phone number.
+    """
     user: User = request.auth
 
     key_phone_change = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
@@ -113,6 +128,9 @@ def change_phone(request, data: ChangePhoneIn, purpose: AuthPurpose = AuthPurpos
 
 @router.post('/phone/verify-new', response=MessageOut, auth=JWTAuth())
 def verify_new_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPurpose.VERIFY_NEW_PHONE):
+    """
+    Verify the user's new phone number and update it in the system.
+    """
     user: User = request.auth
 
     key_phone_change = PHONE_CHANGE_CACHE_KEY.format(id=user.id)
@@ -146,6 +164,9 @@ def verify_new_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
 
 @router.post('/password/change', response=MessageOut, auth=JWTAuth())
 def password_change(request, data: ChangePasswordIn, purpose: AuthPurpose = AuthPurpose.CHANGE_PASSWORD):
+    """
+    Change the authenticated user's password after verifying the current password and OTP.
+    """
     user: User = request.auth
     validate_user_password(data.password, user=user)
 
@@ -161,6 +182,9 @@ def password_change(request, data: ChangePasswordIn, purpose: AuthPurpose = Auth
 
 @router.post('/email/change', response=MessageOut, auth=JWTAuth())
 def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpose.CHANGE_EMAIL):
+    """
+    Change the authenticated user's email after verifying the OTP.
+    """
     user: User = request.auth
 
     verify_cached_code(user, purpose.value, data.passcode)
@@ -175,6 +199,9 @@ def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpos
 
 @router.post('/tfa-method/change', response=MessageOut, auth=JWTAuth())
 def tfa_method_change(request, data: ChangeTFAMethodIn, purpose: AuthPurpose = AuthPurpose.CHANGE_TFA_METHOD):
+    """
+    Change the authenticated user's two-factor authentication (TFA) method after verifying the OTP.
+    """
     # This implementation is unfinished, and requires further checks to ensure proper TFA setup.
     # TODO: Need to re-setup TFA after changing method
     user: User = request.auth
