@@ -31,8 +31,11 @@ def create_user(request, payload: UserIn):
     """
     payload_dict = payload.dict()
     role_id = payload_dict.pop('role_id')
-    validate_user_password(payload_dict['password'])  # Validate password
+    password = payload_dict.pop('password')
+    validate_user_password(password)  # Validate password
     user = User.objects.create(**payload_dict)  # Create the user
+    user.set_password(password)
+    user.save()
     UserPreference.objects.create(user=user)  # Create user preferences
     UserRole.objects.create(user=user, role_id=role_id)  # Establish user-role relationship
     return user

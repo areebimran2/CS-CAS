@@ -34,7 +34,7 @@ def create_role(request, payload: RoleIn):
     return role
 
 
-@router.put('/{role_id}')
+@router.put('/{role_id}', response=RoleOut)
 def update_role(request, payload: PatchDict[RoleIn], role_id: str):
     """
     Update an existing role's details, including its associated permissions.

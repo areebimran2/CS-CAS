@@ -65,6 +65,7 @@ def login(request, data: LoginIn):
 @router.post('/logout', response=MessageOut)
 def logout(request):
     """
+    Logout the user by deleting their session and refresh token cookie.
     """
     cookie = request.COOKIES.get(settings.REFRESH_COOKIE_KEY)
 
