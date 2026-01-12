@@ -14,15 +14,15 @@ class ExchangeRatesManual(models.Model):
         db_table = 'exchange_rates_manual'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(base__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(base__regex=r'^[A-Z]{3}$'),
                 name='exchange_rates_manual_base_check'
             ),
             models.CheckConstraint(
-                check=models.Q(quote__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(quote__regex=r'^[A-Z]{3}$'),
                 name='exchange_rates_manual_quote_check'
             ),
             models.CheckConstraint(
-                check=models.Q(rate__gt=models.Value(0)),
+                condition=models.Q(rate__gt=models.Value(0)),
                 name='exchange_rates_manual_rate_check'
             ),
             models.UniqueConstraint(
@@ -43,15 +43,15 @@ class FXRatesCache(models.Model):
         db_table = 'fx_rates_cache'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(base__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(base__regex=r'^[A-Z]{3}$'),
                 name='fx_rates_cache_base_check'
             ),
             models.CheckConstraint(
-                check=models.Q(quote__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(quote__regex=r'^[A-Z]{3}$'),
                 name='fx_rates_cache_quote_check'
             ),
             models.CheckConstraint(
-                check=models.Q(rate__gt=models.Value(0)),
+                condition=models.Q(rate__gt=models.Value(0)),
                 name='fx_rates_cache_rate_check'
             ),
             models.UniqueConstraint(

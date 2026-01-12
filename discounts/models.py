@@ -61,11 +61,11 @@ class DiscountTarget(models.Model):
         db_table = 'discount_targets'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(target_kind__in=['sailing','category','cabin']),
+                condition=models.Q(target_kind__in=['sailing','category','cabin']),
                 name='discount_targets_target_kind_check',
             ),
             models.CheckConstraint(
-                check=(
+                condition=(
                     (models.Q(target_kind='sailing') &
                      models.Q(sailing__isnull=False, category__isnull=True, cabin__isnull=True)) |
                     (models.Q(target_kind='category') &

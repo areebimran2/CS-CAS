@@ -27,7 +27,7 @@ class Season(models.Model):
                 name='seasons_name_key'
             ),
             models.CheckConstraint(
-                check=models.Q(start_date__lte=models.F('end_date')),
+                condition=models.Q(start_date__lte=models.F('end_date')),
                 name='season_nonempty'
             ),
             ExclusionConstraint(
@@ -66,7 +66,7 @@ class Sailing(models.Model):
         db_table = 'sailings'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(nights__gt=0),
+                condition=models.Q(nights__gt=0),
                 name='sailings_nights_check'
             ),
             ExclusionConstraint(

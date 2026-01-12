@@ -109,7 +109,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                 name='users_email_key',
             ),
             models.CheckConstraint(
-                check=models.Q(twofa_method__in=['sms','totp']),
+                condition=models.Q(twofa_method__in=['sms','totp']),
                 name='users_twofa_method_check',
             )
         ]
@@ -140,7 +140,7 @@ class UserPreference(models.Model):
         db_table = 'user_prefs'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(fx_mode__in=['manual', 'live']),
+                condition=models.Q(fx_mode__in=['manual', 'live']),
                 name='user_prefs_fx_mode_check',
             )
         ]

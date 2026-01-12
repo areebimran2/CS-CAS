@@ -121,7 +121,7 @@ class CancellationPolicyTier(models.Model):
         db_table = 'cancellation_policy_tiers'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(min_days__lte=models.F('max_days')),
+                condition=models.Q(min_days__lte=models.F('max_days')),
                 name='ck_days_order'
             )
         ]

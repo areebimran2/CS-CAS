@@ -39,7 +39,7 @@ class ShipCurrency(models.Model):
         db_table = 'ship_currencies'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(currency__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(currency__regex=r'^[A-Z]{3}$'),
                 name='ship_currencies_currency_check'
             )
         ]

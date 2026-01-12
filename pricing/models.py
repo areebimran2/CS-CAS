@@ -25,11 +25,11 @@ class SeasonShipCost(models.Model):
         db_table = 'season_ship_costs'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(currency__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(currency__regex=r'^[A-Z]{3}$'),
                 name='season_ship_costs_currency_check'
             ),
             models.CheckConstraint(
-                check=models.Q(single_multiplier__gte=models.Value(1.0)),
+                condition=models.Q(single_multiplier__gte=models.Value(1.0)),
                 name='season_ship_costs_single_multiplier_check'
             )
         ]
@@ -54,11 +54,11 @@ class CabinCostOverride(models.Model):
         db_table = 'cabin_cost_overrides'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(currency__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(currency__regex=r'^[A-Z]{3}$'),
                 name='cabin_cost_overrides_currency_check'
             ),
             models.CheckConstraint(
-                check=models.Q(single_multiplier__gte=models.Value(1.0)),
+                condition=models.Q(single_multiplier__gte=models.Value(1.0)),
                 name='cabin_cost_overrides_single_multiplier_check'
             ),
             models.UniqueConstraint(
@@ -112,11 +112,11 @@ class CabinCostCustom(models.Model):
         db_table = 'cabin_cost_customs'
         constraints = [
             models.CheckConstraint(
-                check=models.Q(currency__regex=r'^[A-Z]{3}$'),
+                condition=models.Q(currency__regex=r'^[A-Z]{3}$'),
                 name='cabin_cost_customs_currency_check'
             ),
             models.CheckConstraint(
-                check=(models.Q(value__isnull=False) & models.Q(percent__isnull=True)) |
+                condition=(models.Q(value__isnull=False) & models.Q(percent__isnull=True)) |
                       (models.Q(value__isnull=True) & models.Q(percent__isnull=False)),
                 name='ck_custom_value'
             ),
