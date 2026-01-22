@@ -12,7 +12,6 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from common.exceptions import APIBaseError
 from myadmin.models import Role, Permission
 
-
 class Status(str, Enum):
     ACTIVE = 'active'
     SUSPENDED = 'suspended'
@@ -20,16 +19,15 @@ class Status(str, Enum):
 
 register_field('PostgresEnumField', Status)
 
-
 class UserIn(Schema):
     first_name: str
     middle_name: Optional[str] = None
     last_name: str
+    designation: str
     email: EmailStr
     phone: PhoneNumber
     password: str
     role_id: uuid.UUID
-    status: Status
 
     @model_validator(mode='after')
     def validate_role(self):
@@ -60,6 +58,7 @@ class UserOut(ModelSchema):
     def resolve_phone(obj):
         return str(obj.phone)
 
+
 class RoleIn(Schema):
     name: str
     description: Optional[str] = None
@@ -78,6 +77,7 @@ class RoleIn(Schema):
             )
         return self
 
+
 class RoleOut(ModelSchema):
     permissions: List[str]
 
@@ -88,3 +88,11 @@ class RoleOut(ModelSchema):
     @staticmethod
     def resolve_permissions(obj):
         return obj.permissions.values_list('key', flat=True)
+
+class PermissionOut(ModelSchema):
+    class Meta:
+        model = Permission
+        fields = ['key', 'description']
+
+class MessageIn(Schema):
+    text: Optional[str] = None

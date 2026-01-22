@@ -8,7 +8,7 @@ from myauth.models import UserPreference
 from myadmin.models import UserRole
 from myadmin.schemas import *
 
-router = Router(tags=['Users'])
+router = Router(tags=['B1. Users'])
 User = get_user_model()
 
 
@@ -81,14 +81,20 @@ def get_user(request, user_id: str):
 
 
 @router.post('/{user_id}/suspend', response=UserOut)
-def suspend_user(request, user_id: str):
+def suspend_user(request, payload: MessageIn, user_id: str):
     """
     Suspend a user account, disabling their access to the system.
     """
-    user = get_object_or_404(User, id=user_id)
-    user.is_active(False)
+    # user = get_object_or_404(User, id=user_id)
+    # user.is_active(False)
+    #
+    # # TODO: Need to clear user sessions and related cached records (pending actions, OTPs, etc.)
+    #
+    # user.save()
+    # return user
 
-    # TODO: Need to clear user sessions and related cached records (pending actions, OTPs, etc.)
-
-    user.save()
-    return user
+@router.post('/{user_id}/unsuspend', response=UserOut)
+def unsuspend_user(request, payload: MessageIn, user_id: str):
+    """
+    Reactivate a user account, granting their access to the system.
+    """

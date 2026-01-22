@@ -8,7 +8,7 @@ from myadmin.models import Role, Permission
 from myadmin.schemas import RoleOut, RoleIn
 from myauth.schemas import *
 
-router = Router(tags=['Roles'])
+router = Router(tags=['B2. Roles'])
 User = get_user_model()
 
 

@@ -20,7 +20,7 @@ from common.utils import generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTE
     set_user_session, set_refresh_cookie, set_verification_context
 from myauth.schemas import *
 
-router = Router(tags=['TFA'])
+router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
 User = get_user_model()
 
 @router.post('/totp/setup', response=TFASetupTOTPOut)

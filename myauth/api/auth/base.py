@@ -10,36 +10,32 @@ from django.utils import timezone
 from django_otp.plugins.otp_email.conf import settings
 from ninja import Router
 from ninja.responses import Response
-from ninja_extra import status
 from ninja_jwt.tokens import RefreshToken
 from two_factor.utils import default_device
 
-from common.exceptions import APIBaseError
 from common.utils import RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
     VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_context_or_session, validate_user_password, \
     set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
 from myauth.schemas import *
 
-router = Router(tags=['Session'])
+router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
 User = get_user_model()
 
 
-@router.post('/login', response=LoginOut)
+@router.post('/login', response={200: LoginOut})
 def login(request, data: LoginIn):
     """
-    Check if user credentials are valid and return user ID and 2FA method.
+    Check if the given user credentials are valid, then establish a login verification context. The context ID along
+    with the user's default 2FA method/device (if any) are returned.
 
     If the user has not yet setup 2FA, then they must do so after this step by calling the appropriate 2FA setup
     endpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.
 
+    SMS: OTP is sent through `/api/auth/2fa/sms/send` endpoint.
+    TOTP: OTP is generated through authenticator apps (e.g Google Authenticator).
 
-    Flow is as follows:
-
-	    1. email+password+optional remember_me → /api/auth/login : gives back verification context id
-                - If a user has not established an auth device, setup SMS through /api/auth/2fa/sms/send or
-                  TOTP by calling /api/auth/2fa/totp/setup → /api/auth/2fa/totp/confirm
-	    2. context id+purpose (login/reset) → /api/auth/2fa/sms/send: sends OTP
-	    3. passcode+purpose (login/reset) → /api/auth/2fa/verify: establishes login session
+    **Note**: This endpoint does NOT establish a login session. The session is only created after successful
+    2FA verification.
     """
     user: Optional[User] = authenticate(username=data.email, password=data.password)
     if user is None:  # Invalid credentials

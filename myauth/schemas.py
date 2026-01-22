@@ -23,7 +23,7 @@ class Method(Schema):
 
 
 class LoginIn(Schema):
-    email: str
+    email: EmailStr
     password: str
     remember_me: Optional[bool] = False
 
