@@ -22,7 +22,7 @@ router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
 User = get_user_model()
 
 
-@router.post('/login', response={200: LoginOut})
+@router.post('/login', response=LoginOut)
 def login(request, data: LoginIn):
     """
     Check if the given user credentials are valid, then establish a login verification context. The context ID along

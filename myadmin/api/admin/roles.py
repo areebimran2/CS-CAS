@@ -16,7 +16,7 @@ User = get_user_model()
 @paginate()
 def list_roles(request):
     """
-    Provides a paginated list of all roles and their assigned permissions in the system.
+    Returns a list of roles, and their assigned permissions.
     """
     return Role.objects.all()
 

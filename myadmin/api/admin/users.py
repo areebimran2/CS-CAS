@@ -16,10 +16,7 @@ User = get_user_model()
 @paginate()
 def list_users(request):
     """
-    Provides a paginated list of all users in the system.
-
-    Note: This endpoint does not apply any filters; it returns all users. For production use, consider adding
-    filtering options.
+    Returns a list users in the system.
     """
     return User.objects.all()
 

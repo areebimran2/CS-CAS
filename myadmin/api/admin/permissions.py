@@ -11,6 +11,6 @@ router = Router(tags=['B3. Permissions'])
 @paginate()
 def list_permissions(request):
     """
-    Provides a paginated list of the permissions catalogs.
+    Returns a list of the permissions catalogs.
     """
     return Permission.objects.all()
