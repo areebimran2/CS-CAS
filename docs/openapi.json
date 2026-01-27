@@ -1,0 +1,1464 @@
+{
+  "openapi": "3.1.0",
+  "x-stoplight": {
+    "id": "nfmlwn3mvsyt5"
+  },
+  "info": {
+    "title": "NinjaAPI",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "operationId": "myauth_api_auth_base_login",
+        "summary": "Login",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The verification session was successfully established.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Check if the given user credentials are valid, then establish a login verification context. The context ID along\nwith the user's default 2FA method/device (if any) are returned.\n\nIf the user has not yet setup 2FA, then they must do so after this step by calling the appropriate 2FA setup\nendpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.\n\nSMS: OTP is sent through `/api/auth/2fa/sms/send` endpoint.  \nTOTP: OTP is generated through authenticator apps (e.g Google Authenticator).\n\n**Note**: This endpoint does NOT establish a login session. The session is only created after successful\n2FA verification.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              },
+              "examples": {
+                "Example 1": {
+                  "value": {
+                    "email": "user@example.com",
+                    "password": "strong-password123",
+                    "remember_me": true
+                  }
+                },
+                "Example 2": {
+                  "value": {
+                    "email": "user@example.com",
+                    "password": "strong-password123"
+                  }
+                }
+              }
+            }
+          },
+          "required": true,
+          "description": "The credentials of the user for which a verification session is to be established."
+        },
+        "x-stoplight": {
+          "id": "gocc2l4ei0h94"
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "myauth_api_auth_base_logout",
+        "summary": "Logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Logout the user by deleting their session and refresh token cookie.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "operationId": "myauth_api_auth_base_refresh",
+        "summary": "Refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Refresh the access token using a valid refresh token from cookies.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ]
+      }
+    },
+    "/api/auth/password/forgot": {
+      "post": {
+        "operationId": "myauth_api_auth_base_forgot_password",
+        "summary": "Forgot Password",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Initiate the password reset process by sending a reset link to the user's email.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/auth/password/reset": {
+      "post": {
+        "operationId": "myauth_api_auth_base_reset_password",
+        "summary": "Reset Password",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Complete the password reset process by verifying the token and setting a new password.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/auth/2fa/totp/setup": {
+      "post": {
+        "operationId": "myauth_api_auth_tfa_setup_tfa_totp",
+        "summary": "Setup Tfa Totp",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TFASetupTOTPOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Initiate TOTP 2FA setup for the user by generating a TOTP secret and OTP URI.\n\nThe OTP URI should be used to generate a QR code for the user to scan with their authenticator app.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TFASetupTOTPIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/auth/2fa/totp/confirm": {
+      "post": {
+        "operationId": "myauth_api_auth_tfa_confirm_tfa_totp",
+        "summary": "Confirm Tfa Totp",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TFAConfirmOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Confirm TOTP 2FA setup by verifying the provided passcode against the TOTP secret.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TFAConfirmTOTPIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/auth/2fa/sms/send": {
+      "post": {
+        "operationId": "myauth_api_auth_tfa_send_2fa_sms",
+        "summary": "Send 2Fa Sms",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "login"
+                  ],
+                  "title": "UnAuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "login"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TFAConfirmOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Send an OTP SMS to the user's registered phone number for SMS 2FA verification.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TFASetupSMSIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/auth/2fa/verify": {
+      "post": {
+        "operationId": "myauth_api_auth_tfa_verify_2fa",
+        "summary": "Verify 2Fa",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "login"
+                  ],
+                  "title": "UnAuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "login"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Verify the provided 2FA passcode and establish a user session upon successful verification.",
+        "tags": [
+          "A1. Login / 2FA / Forgotten Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TFAVerifyIn"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
+    "/api/me/": {
+      "get": {
+        "operationId": "myauth_api_me_base_profile",
+        "summary": "Profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileSchema"
+                }
+              }
+            }
+          }
+        },
+        "description": "Retrieve the authenticated user's profile information, including preferences.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "myauth_api_me_base_update_profile",
+        "summary": "Update Profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileSchema"
+                }
+              }
+            }
+          }
+        },
+        "description": "Update the authenticated user's profile information, including preferences.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserProfileUpdateSchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/security/sms/send": {
+      "post": {
+        "operationId": "myauth_api_me_base_secure_action",
+        "summary": "Secure Action",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Send an OTP SMS to the user's registered phone number for security-sensitive actions.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuritySetupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/phone/verify-old": {
+      "post": {
+        "operationId": "myauth_api_me_base_verify_old_phone",
+        "summary": "Verify Old Phone",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "verify-old-phone",
+                    "verify-new-phone",
+                    "change-email",
+                    "change-password",
+                    "change-tfa-method"
+                  ],
+                  "title": "AuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "verify-old-phone"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Verify the user's old phone number as stage 1 of the phone number change process.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/phone/change": {
+      "post": {
+        "operationId": "myauth_api_me_base_change_phone",
+        "summary": "Change Phone",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "verify-old-phone",
+                    "verify-new-phone",
+                    "change-email",
+                    "change-password",
+                    "change-tfa-method"
+                  ],
+                  "title": "AuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "verify-new-phone"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Initiate stage 2 of the phone number change process by sending an OTP to the new phone number.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePhoneIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/phone/verify-new": {
+      "post": {
+        "operationId": "myauth_api_me_base_verify_new_phone",
+        "summary": "Verify New Phone",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "verify-old-phone",
+                    "verify-new-phone",
+                    "change-email",
+                    "change-password",
+                    "change-tfa-method"
+                  ],
+                  "title": "AuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "verify-new-phone"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Verify the user's new phone number and update it in the system.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/password/change": {
+      "post": {
+        "operationId": "myauth_api_me_base_password_change",
+        "summary": "Password Change",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "verify-old-phone",
+                    "verify-new-phone",
+                    "change-email",
+                    "change-password",
+                    "change-tfa-method"
+                  ],
+                  "title": "AuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "change-password"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Change the authenticated user's password after verifying the current password and OTP.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/email/change": {
+      "post": {
+        "operationId": "myauth_api_me_base_email_change",
+        "summary": "Email Change",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "verify-old-phone",
+                    "verify-new-phone",
+                    "change-email",
+                    "change-password",
+                    "change-tfa-method"
+                  ],
+                  "title": "AuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "change-email"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Change the authenticated user's email after verifying the OTP.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeEmailIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/me/tfa-method/change": {
+      "post": {
+        "operationId": "myauth_api_me_base_tfa_method_change",
+        "summary": "Tfa Method Change",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "purpose",
+            "schema": {
+              "allOf": [
+                {
+                  "enum": [
+                    "verify-old-phone",
+                    "verify-new-phone",
+                    "change-email",
+                    "change-password",
+                    "change-tfa-method"
+                  ],
+                  "title": "AuthPurpose",
+                  "type": "string"
+                }
+              ],
+              "default": "change-tfa-method"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Change the authenticated user's two-factor authentication (TFA) method after verifying the OTP.",
+        "tags": [
+          "A2. My Profile"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTFAMethodIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoginOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Method"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "LoginOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "bzg4reijk5gko"
+        }
+      },
+      "Method": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "Method",
+        "type": "object",
+        "x-stoplight": {
+          "id": "4tkahzccsijo3"
+        }
+      },
+      "LoginIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "remember_me": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": false,
+            "title": "Remember Me",
+            "description": "Establishes a longer session upon verification if set to True."
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "dv2ajl2bqw7hx"
+        }
+      },
+      "MessageOut": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "MessageOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "dcl2nu00xrjvt"
+        }
+      },
+      "TokenOut": {
+        "properties": {
+          "access": {
+            "title": "Access",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access"
+        ],
+        "title": "TokenOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "spjw3hgk1yxdl"
+        }
+      },
+      "ForgotPasswordIn": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "hjqn62oj8do6a"
+        }
+      },
+      "ResetPasswordIn": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "token",
+          "password"
+        ],
+        "title": "ResetPasswordIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "ew1anbgkvguec"
+        }
+      },
+      "TFASetupTOTPOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "otpauth_url": {
+            "title": "Otpauth Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "otpauth_url"
+        ],
+        "title": "TFASetupTOTPOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "7oh8ak317eeq6"
+        }
+      },
+      "TFASetupTOTPIn": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "TFASetupTOTPIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "9qj4z56f2xjn9"
+        }
+      },
+      "TFAConfirmOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "message"
+        ],
+        "title": "TFAConfirmOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "l6zx09ebxdufs"
+        }
+      },
+      "TFAConfirmTOTPIn": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "passcode": {
+            "title": "Passcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "passcode"
+        ],
+        "title": "TFAConfirmTOTPIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "ef9n3p2asoimz"
+        }
+      },
+      "UnAuthPurpose": {
+        "enum": [
+          "login"
+        ],
+        "title": "UnAuthPurpose",
+        "type": "string",
+        "x-stoplight": {
+          "id": "mklvrtkqcu2e0"
+        }
+      },
+      "TFASetupSMSIn": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "TFASetupSMSIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "9gdl3iv229oxw"
+        }
+      },
+      "TFAVerifyIn": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "passcode": {
+            "title": "Passcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "passcode"
+        ],
+        "title": "TFAVerifyIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "8urq7dsp5naoj"
+        }
+      },
+      "UserPrefSchema": {
+        "properties": {
+          "opt_in_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opt In Enabled"
+          },
+          "notify_cabin_avail": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notify Cabin Avail"
+          },
+          "notify_flash_sale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notify Flash Sale"
+          },
+          "notify_release_request": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notify Release Request"
+          },
+          "fx_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fx Mode"
+          }
+        },
+        "title": "UserPrefSchema",
+        "type": "object",
+        "x-stoplight": {
+          "id": "846oy9ad1slv7"
+        }
+      },
+      "UserProfileSchema": {
+        "properties": {
+          "preferences": {
+            "$ref": "#/components/schemas/UserPrefSchema"
+          },
+          "first_name": {
+            "title": "First Name",
+            "type": "string"
+          },
+          "middle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Middle Name"
+          },
+          "last_name": {
+            "title": "Last Name",
+            "type": "string"
+          },
+          "designation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Designation"
+          },
+          "email": {
+            "maxLength": 254,
+            "title": "Email",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 128,
+            "title": "Phone",
+            "type": "string"
+          },
+          "twofa_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Twofa Method"
+          },
+          "twofa_enabled": {
+            "title": "Twofa Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "preferences",
+          "first_name",
+          "last_name",
+          "email",
+          "phone",
+          "twofa_enabled"
+        ],
+        "title": "UserProfileSchema",
+        "type": "object",
+        "x-stoplight": {
+          "id": "xvgfpr0ti2220"
+        }
+      },
+      "UserProfileUpdateSchema": {
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "middle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Middle Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "designation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Designation"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserPrefSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "UserProfileUpdateSchema",
+        "type": "object",
+        "x-stoplight": {
+          "id": "7slxcl76eew15"
+        }
+      },
+      "AuthPurpose": {
+        "enum": [
+          "verify-old-phone",
+          "verify-new-phone",
+          "change-email",
+          "change-password",
+          "change-tfa-method"
+        ],
+        "title": "AuthPurpose",
+        "type": "string",
+        "x-stoplight": {
+          "id": "shycfkxd92z9v"
+        }
+      },
+      "SecuritySetupIn": {
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/AuthPurpose"
+          }
+        },
+        "required": [
+          "purpose"
+        ],
+        "title": "SecuritySetupIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "9mqiw1t8qt01x"
+        }
+      },
+      "VerifySchema": {
+        "properties": {
+          "passcode": {
+            "title": "Passcode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passcode"
+        ],
+        "title": "VerifySchema",
+        "type": "object",
+        "x-stoplight": {
+          "id": "yldytoyl4wqqp"
+        }
+      },
+      "ChangePhoneIn": {
+        "properties": {
+          "phone": {
+            "format": "phone",
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phone"
+        ],
+        "title": "ChangePhoneIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "r7gu927i5gvtk"
+        }
+      },
+      "ChangePasswordIn": {
+        "properties": {
+          "passcode": {
+            "title": "Passcode",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "confirm": {
+            "title": "Confirm",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passcode",
+          "password",
+          "confirm"
+        ],
+        "title": "ChangePasswordIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "1cw4r3r0vf8dp"
+        }
+      },
+      "ChangeEmailIn": {
+        "properties": {
+          "passcode": {
+            "title": "Passcode",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passcode",
+          "email"
+        ],
+        "title": "ChangeEmailIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "2r5qi5sbep2w0"
+        }
+      },
+      "ChangeTFAMethodIn": {
+        "properties": {
+          "passcode": {
+            "title": "Passcode",
+            "type": "string"
+          },
+          "method": {
+            "$ref": "#/components/schemas/TFAMethod"
+          }
+        },
+        "required": [
+          "passcode",
+          "method"
+        ],
+        "title": "ChangeTFAMethodIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "nm43bu9vuxh2p"
+        }
+      },
+      "TFAMethod": {
+        "enum": [
+          "sms",
+          "totp"
+        ],
+        "title": "TFAMethod",
+        "type": "string",
+        "x-stoplight": {
+          "id": "fo8nr6igiy3dl"
+        }
+      }
+    },
+    "securitySchemes": {
+      "JWTAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "servers": [],
+  "tags": [
+    {
+      "name": "A1. Login / 2FA / Forgotten Password",
+      "description": "\nRelates all endpoints pertaining to sign-in and logged-in user sessions. This includes login flow,\nreset password flow, and session authentication.\n\nNote that a verification context is a cached record of relevant user information that is used to establish their\nsession once verification is complete.\n\nThe entire login flow is as follows:\n\n1. email+password+optional remember_me → `/api/auth/login`: returns verification context id + default 2FA method/device.\n    If the method is None, the user has not setup a 2FA device yet.\n    - A user may setup a TOTP device or SMS device (the device must match their `twofa_method`, i.e a user with\n          `twofa_method='sms'` cannot setup a TOTP device)\n        - SMS setup through `/api/auth/2fa/sms/send`\n2. context id+purpose (login/reset) → /api/auth/2fa/sms/send: sends OTP\n3. passcode+purpose (login/reset) → /api/auth/2fa/verify: establishes login session\n"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "A. Authentication & Profile",
+      "tags": [
+        "A1. Login / 2FA / Forgotten Password",
+        "A2. My Profile"
+      ]
+    }
+  ]
+}
