@@ -16,17 +16,82 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "The verification session was successfully established.",
+            "description": "The login verification context was successfully established.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LoginOut"
+                },
+                "examples": {
+                  "No established device": {
+                    "value": {
+                      "id": "verif.R_g-hREvUPprZ8vRYuVHzQ",
+                      "method": null
+                    }
+                  },
+                  "Established device": {
+                    "value": {
+                      "id": "verif.R_g-hREvUPprZ8vRYuVHzQ",
+                      "method": {
+                        "name": "default",
+                        "type": "PhoneDevice"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Common response for all operations that can return a `401` error indicating authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/AUTHENTICATION_FAILED",
+                  "title": "Invalid credentials",
+                  "status": 401,
+                  "detail": "Either email or password is invalid",
+                  "instance": "/auth/login",
+                  "errors": [
+                    {
+                      "field": "email"
+                    },
+                    {
+                      "field": "password"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Schema validation for the request body failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/VALIDATION_FAILED",
+                  "title": "Validation Failed",
+                  "status": 422,
+                  "detail": "One or more validation errors occurred.",
+                  "instance": "/auth/login",
+                  "errors": [
+                    {
+                      "field": "email",
+                      "message": "value is not a valid email address: The part after the @-sign is not valid. It should have a period."
+                    }
+                  ]
                 }
               }
             }
           }
         },
-        "description": "Check if the given user credentials are valid, then establish a login verification context. The context ID along\nwith the user's default 2FA method/device (if any) are returned.\n\nIf the user has not yet setup 2FA, then they must do so after this step by calling the appropriate 2FA setup\nendpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.\n\nSMS: OTP is sent through `/api/auth/2fa/sms/send` endpoint.  \nTOTP: OTP is generated through authenticator apps (e.g Google Authenticator).\n\n**Note**: This endpoint does NOT establish a login session. The session is only created after successful\n2FA verification.",
+        "description": "Check if the given user credentials are valid, then establish a login verification context. The context ID along with the user's default 2FA method/device (if any) are returned.\n\nIf the user has not yet setup 2FA, then they must do so after this step by calling the appropriate 2FA setup endpoint (SMS default). Otherwise, they can proceed to verify 2FA using the returned method/device.\n\nSMS: OTP is sent through `/api/auth/2fa/sms/send` endpoint.  \nTOTP: OTP is generated through authenticator apps (e.g Google Authenticator).\n\nThis operation may fail for any of the following reasons:\n- The given credentials does not match an account (HTTP error `401`)\n- A schema validation error was indicated, i.e. missing field, or incorrect field format (HTTP error `422`)\n\n**Note**: This endpoint does NOT establish a login session. The session is only created after successful\n2FA verification.",
         "tags": [
           "A1. Login / 2FA / Forgotten Password"
         ],
@@ -37,24 +102,24 @@
                 "$ref": "#/components/schemas/LoginIn"
               },
               "examples": {
-                "Example 1": {
+                "Sign-in": {
+                  "value": {
+                    "email": "user@example.com",
+                    "password": "strong-password123"
+                  }
+                },
+                "Remembered sign-in": {
                   "value": {
                     "email": "user@example.com",
                     "password": "strong-password123",
                     "remember_me": true
-                  }
-                },
-                "Example 2": {
-                  "value": {
-                    "email": "user@example.com",
-                    "password": "strong-password123"
                   }
                 }
               }
             }
           },
           "required": true,
-          "description": "The credentials of the user for which a verification session is to be established."
+          "description": "The credentials of the user for which a login verification context is to be established."
         },
         "x-stoplight": {
           "id": "gocc2l4ei0h94"
@@ -65,43 +130,102 @@
       "post": {
         "operationId": "myauth_api_auth_base_logout",
         "summary": "Logout",
-        "parameters": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "cookie",
+            "name": "cscas-refresh",
+            "description": "Refresh token stored in an HttpOnly cookie."
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The active session was successfully terminated.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MessageOut"
+                },
+                "example": {
+                  "message": "Logged-in session has been cleared successfully."
                 }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "example": "cscas-refresh=; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/"
+                },
+                "description": "Clears the refresh token cookie."
               }
             }
           }
         },
-        "description": "Logout the user by deleting their session and refresh token cookie.",
+        "description": "Logout by terminating the active session and clearing the refresh token cookie.",
         "tags": [
           "A1. Login / 2FA / Forgotten Password"
-        ]
+        ],
+        "requestBody": {
+          "content": {}
+        }
       }
     },
     "/api/auth/refresh": {
       "post": {
         "operationId": "myauth_api_auth_base_refresh",
         "summary": "Refresh",
-        "parameters": [],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "cookie",
+            "name": "cscas-refresh",
+            "description": "Refresh token stored in an HttpOnly cookie."
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The active session was successfully refreshed.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenOut"
                 }
               }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string",
+                  "example": "cscas-refresh=eyJh...; HttpOnly; Path=/;"
+                },
+                "description": "Sets the new rotated refresh token cookie."
+              }
+            }
+          },
+          "401": {
+            "description": "Common response for all operations that can return a `401` error indicating authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/AUTHENTICATION_FAILED",
+                  "title": "Invalid refresh token",
+                  "status": 401,
+                  "detail": "Refresh token does not match the stored session data: old token reuse",
+                  "instance": "/auth/refresh"
+                }
+              }
             }
           }
         },
-        "description": "Refresh the access token using a valid refresh token from cookies.",
+        "description": "Check the validity of the refresh token in the cookie, then rotate it and use it to generate a new short-lived access token. The previous token is invalidated, and the server sends an updated `Set-Cookie` header to the client that contains the new `cscas-refresh`.\n\nThis operation may fail for any of the following reasons:\n- `cscas-refresh` is missing in the cookie or does not correspond to a refresh token issued by the system (HTTP error `401`)\n- There is no valid session that corresponds to the refresh token (HTTP error `401`)\n- There is a refresh token mismatch with the session context (HTTP error `401`)\n\nNote: the session context details are updated accordingly to actively maintain user session.",
         "tags": [
           "A1. Login / 2FA / Forgotten Password"
         ]
@@ -114,17 +238,60 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "If a corresponding account exists, A password reset link was successfully sent to the email.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MessageOut"
+                },
+                "example": {
+                  "message": "If an account with that email exists, a password reset link has been sent."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Common response used when an input conflicts with existing data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/RATE_LIMITED",
+                  "title": "Password reset request error",
+                  "status": 409,
+                  "detail": "Password reset link has been sent recently. Please check the given email or try again later",
+                  "instance": "/auth/password/forgot"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Schema validation for the request body failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/VALIDATION_FAILED",
+                  "title": "Validation Failed",
+                  "status": 422,
+                  "detail": "One or more validation errors occurred.",
+                  "instance": "/auth/password/forgot",
+                  "errors": [
+                    {
+                      "field": "email",
+                      "message": "Field required"
+                    }
+                  ]
                 }
               }
             }
           }
         },
-        "description": "Initiate the password reset process by sending a reset link to the user's email.",
+        "description": "Initiates the \"forgot password\" flow by requesting a password reset email. Additionally, establishes a password reset verification context that is used to maintain the reset token, and other user specific information. The context id is provided in the email, along with the token.\n\nThis operation may fail for any of the following reasons:\n- A password reset email has already been issued (HTTP error `409`)\n- A schema validation error was indicated, i.e. missing field, or incorrect field format (HTTP error `422`)",
         "tags": [
           "A1. Login / 2FA / Forgotten Password"
         ],
@@ -136,7 +303,8 @@
               }
             }
           },
-          "required": true
+          "required": true,
+          "description": "The email for which a password reset verification context is to be established, and a password reset email to be sent."
         }
       }
     },
@@ -147,17 +315,89 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The password was successfully reset.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MessageOut"
+                },
+                "example": {
+                  "message": "Password has been reset successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Common response for all operations that can return a `400` error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/VALIDATION_FAILED",
+                  "title": "Password validation error",
+                  "status": 400,
+                  "detail": "The provided new password does not meet the password policy requirements",
+                  "instance": "/auth/password/reset",
+                  "errors": [
+                    {
+                      "field": "password",
+                      "message": "Password is too short."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Common response for all operations that can return a `401` error indicating authentication is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/AUTHENTICATION_FAILED",
+                  "title": "Password reset failed",
+                  "status": 401,
+                  "detail": "Error encountered when verifying password reset token",
+                  "instance": "/auth/password/reset",
+                  "errors": [
+                    {
+                      "field": "token",
+                      "message": "Invalid or expired token"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Schema validation for the request body failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                },
+                "example": {
+                  "type": "https://api.cscas/errors/VALIDATION_FAILED",
+                  "title": "Validation Failed",
+                  "status": 422,
+                  "detail": "One or more validation errors occurred.",
+                  "instance": "/auth/password/forgot",
+                  "errors": [
+                    {
+                      "field": "id",
+                      "message": "Does not match expected verification context id pattern."
+                    }
+                  ]
                 }
               }
             }
           }
         },
-        "description": "Complete the password reset process by verifying the token and setting a new password.",
+        "description": "Completes the \"forgot password\" flow by validating the token sent in the password reset email from `/api/auth/password/forgot` and setting a new password for the user.\n\nThis operation may fail for any of the following reasons:\n- The new password fails to meet strong policy requirements (HTTP error `400`)\n- There is no valid context with the given context id (HTTP error `401`)\n- The token given does not match the password reset context, token validation failed (HTTP error `401`)\n- A schema validation error was indicated, i.e. missing field, or incorrect field format (HTTP error `422`)",
         "tags": [
           "A1. Login / 2FA / Forgotten Password"
         ],
@@ -169,7 +409,8 @@
               }
             }
           },
-          "required": true
+          "required": true,
+          "description": "The verification details provided in the password reset email, and the new password."
         }
       }
     },
@@ -202,7 +443,8 @@
               }
             }
           },
-          "required": true
+          "required": true,
+          "description": "The login verification context from `api/auth/login`."
         }
       }
     },
@@ -243,25 +485,7 @@
       "post": {
         "operationId": "myauth_api_auth_tfa_send_2fa_sms",
         "summary": "Send 2Fa Sms",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "purpose",
-            "schema": {
-              "allOf": [
-                {
-                  "enum": [
-                    "login"
-                  ],
-                  "title": "UnAuthPurpose",
-                  "type": "string"
-                }
-              ],
-              "default": "login"
-            },
-            "required": false
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "OK",
@@ -286,7 +510,8 @@
               }
             }
           },
-          "required": true
+          "required": true,
+          "description": "The login verification context from `api/auth/login`."
         }
       }
     },
@@ -807,10 +1032,18 @@
   "components": {
     "schemas": {
       "LoginOut": {
+        "title": "LoginOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "bzg4reijk5gko"
+        },
+        "examples": [],
         "properties": {
           "id": {
             "title": "Id",
-            "type": "string"
+            "type": "string",
+            "pattern": "^verif\\.[A-Za-z0-9_-]{22}$",
+            "description": "This id maps to the login verification context for the user which contains necessary information to establish a session. This id is required for subsequent steps of the login process."
           },
           "method": {
             "anyOf": [
@@ -818,40 +1051,45 @@
                 "$ref": "#/components/schemas/Method"
               },
               {
-                "type": "null"
+                "type": "null",
+                "description": "The user has not yet set up an authentication device."
               }
-            ]
+            ],
+            "description": "If the user has a verified authentication device, method will contain information corresponding to this device; otherwise, method is null."
           }
         },
         "required": [
           "id"
-        ],
-        "title": "LoginOut",
-        "type": "object",
-        "x-stoplight": {
-          "id": "bzg4reijk5gko"
-        }
+        ]
       },
       "Method": {
+        "title": "Method",
+        "type": "object",
+        "x-stoplight": {
+          "id": "4tkahzccsijo3"
+        },
+        "description": "The user's default authentication device.",
         "properties": {
           "name": {
             "title": "Name",
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "default"
+            ]
           },
           "type": {
             "title": "Type",
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "PhoneDevice",
+              "TOTPDevice"
+            ]
           }
         },
         "required": [
           "name",
           "type"
-        ],
-        "title": "Method",
-        "type": "object",
-        "x-stoplight": {
-          "id": "4tkahzccsijo3"
-        }
+        ]
       },
       "LoginIn": {
         "properties": {
@@ -886,9 +1124,15 @@
         "type": "object",
         "x-stoplight": {
           "id": "dv2ajl2bqw7hx"
-        }
+        },
+        "examples": []
       },
       "MessageOut": {
+        "title": "MessageOut",
+        "type": "object",
+        "x-stoplight": {
+          "id": "dcl2nu00xrjvt"
+        },
         "properties": {
           "message": {
             "title": "Message",
@@ -898,27 +1142,29 @@
         "required": [
           "message"
         ],
-        "title": "MessageOut",
-        "type": "object",
-        "x-stoplight": {
-          "id": "dcl2nu00xrjvt"
-        }
+        "examples": []
       },
       "TokenOut": {
-        "properties": {
-          "access": {
-            "title": "Access",
-            "type": "string"
-          }
-        },
-        "required": [
-          "access"
-        ],
         "title": "TokenOut",
         "type": "object",
         "x-stoplight": {
           "id": "spjw3hgk1yxdl"
-        }
+        },
+        "examples": [
+          {
+            "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5NjM0MjcxLCJpYXQiOjE3Njk2MzMzNzEsImp0aSI6ImY2ZWEyZmFlMjc3ODRlMjQ5MTBlOTI3Y2I0ZmM5ODI1IiwidXNlcl9pZCI6ImM1MjhiZTNiLTE5M2EtNDNiYS1iMzZiLTBkODgwODk4NmVmMSIsInVpZCI6ImM1MjhiZTNiLTE5M2EtNDNiYS1iMzZiLTBkODgwODk4NmVmMSIsInNpZCI6InNlc3Npb24uMFQ1Sk54NlAxTWFsLXJhZjd3YW0zUSIsImF1ZCI6ImNzY2FzLWNsaWVudCIsImlzcyI6ImNzY2FzLWFwaSJ9.T701B4TMqedfrqyEJhk18GAy9I7kbSVF12RiujfuY_I"
+          }
+        ],
+        "properties": {
+          "access": {
+            "title": "Access",
+            "type": "string",
+            "description": "Short-lived JWT used to authenticate API requests. Sent in the `Authorization` header as `Bearer <access>`."
+          }
+        },
+        "required": [
+          "access"
+        ]
       },
       "ForgotPasswordIn": {
         "properties": {
@@ -938,14 +1184,30 @@
         }
       },
       "ResetPasswordIn": {
+        "title": "ResetPasswordIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "ew1anbgkvguec"
+        },
+        "examples": [
+          {
+            "id": "verif.NMJzvfAcNnAHlGBTZiiSWA",
+            "token": "d36138-f6a9d4cc4dae8ed5dcab62142646c118",
+            "password": "strong-password123"
+          }
+        ],
         "properties": {
           "id": {
             "title": "Id",
-            "type": "string"
+            "type": "string",
+            "pattern": "^verif\\.[A-Za-z0-9_-]{22}$",
+            "description": "This id maps to the password reset context. It is provided in the email sent by `/api/auth/password/forgot` and is used to validate the reset token."
           },
           "token": {
             "title": "Token",
-            "type": "string"
+            "type": "string",
+            "pattern": "^(?P<ts_b36>[0-9a-z]{1,6})-(?P<hash>[0-9a-f]{32})$",
+            "description": "Expiring password reset token provided in the email sent by `/api/auth/password/forgot`. "
           },
           "password": {
             "title": "Password",
@@ -956,12 +1218,7 @@
           "id",
           "token",
           "password"
-        ],
-        "title": "ResetPasswordIn",
-        "type": "object",
-        "x-stoplight": {
-          "id": "ew1anbgkvguec"
-        }
+        ]
       },
       "TFASetupTOTPOut": {
         "properties": {
@@ -985,20 +1242,27 @@
         }
       },
       "TFASetupTOTPIn": {
+        "title": "TFASetupTOTPIn",
+        "type": "object",
+        "x-stoplight": {
+          "id": "9qj4z56f2xjn9"
+        },
         "properties": {
           "id": {
             "title": "Id",
-            "type": "string"
+            "type": "string",
+            "pattern": "^verif\\.[A-Za-z0-9_-]{22}$",
+            "description": "A login verification context id."
           }
         },
         "required": [
           "id"
         ],
-        "title": "TFASetupTOTPIn",
-        "type": "object",
-        "x-stoplight": {
-          "id": "9qj4z56f2xjn9"
-        }
+        "examples": [
+          {
+            "id": "verif.R_g-hREvUPprZ8vRYuVHzQ"
+          }
+        ]
       },
       "TFAConfirmOut": {
         "properties": {
@@ -1058,20 +1322,27 @@
         }
       },
       "TFASetupSMSIn": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id"
-        ],
         "title": "TFASetupSMSIn",
         "type": "object",
         "x-stoplight": {
           "id": "9gdl3iv229oxw"
-        }
+        },
+        "examples": [
+          {
+            "id": "verif.R_g-hREvUPprZ8vRYuVHzQ"
+          }
+        ],
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string",
+            "description": "A login verification context id.",
+            "pattern": "^verif\\.[A-Za-z0-9_-]{22}$"
+          }
+        },
+        "required": [
+          "id"
+        ]
       },
       "TFAVerifyIn": {
         "properties": {
@@ -1436,6 +1707,92 @@
         "x-stoplight": {
           "id": "fo8nr6igiy3dl"
         }
+      },
+      "ErrorModel": {
+        "x-stoplight": {
+          "id": "k5ilpen4kcva1"
+        },
+        "title": "ErrorModel",
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "x-stoplight": {
+              "id": "e37g8302z7nka"
+            },
+            "description": "A stable identifier for the error code."
+          },
+          "title": {
+            "title": "Title",
+            "type": "string",
+            "x-stoplight": {
+              "id": "hebwprlvl5d9f"
+            },
+            "description": "A short, human-readable summary of the problem type."
+          },
+          "status": {
+            "title": "Status",
+            "type": "integer",
+            "x-stoplight": {
+              "id": "f162mvo8nvv4r"
+            },
+            "description": "The HTTP status code."
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "x-stoplight": {
+              "id": "51tv8i24g704g"
+            },
+            "description": "A human-readable explanation specific to this occurrence of the problem."
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance",
+            "x-stoplight": {
+              "id": "okcort7o3hm8r"
+            },
+            "description": "The request path that identifies the specific occurrence of the problem."
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors",
+            "x-stoplight": {
+              "id": "5l1k3ecbypk6z"
+            },
+            "description": "An optional list of field-level issues."
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ]
       }
     },
     "securitySchemes": {
