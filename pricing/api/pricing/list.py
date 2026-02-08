@@ -1,3 +1,3 @@
 from ninja import Router
 
-router = Router(tags=['List Pricing'])
+router = Router(tags=['H1. List Pricing'])

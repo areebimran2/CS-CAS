@@ -3,7 +3,7 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from common.utils import not_implemented, validate_user_password
+from common.utils import validate_user_password
 from myauth.models import UserPreference
 from myadmin.models import UserRole
 from myadmin.schemas import *

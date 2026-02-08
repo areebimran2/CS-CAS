@@ -14,3 +14,4 @@ redis==7.1.0
 django-redis==6.0.0
 pydantic-extra-types==2.11.0
 pydantic[email]==2.12.5
+pycountry==24.6.1

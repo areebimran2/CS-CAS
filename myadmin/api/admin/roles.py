@@ -3,7 +3,6 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from common.utils import not_implemented
 from myadmin.models import Role, Permission
 from myadmin.schemas import RoleOut, RoleIn
 from myauth.schemas import *

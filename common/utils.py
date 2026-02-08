@@ -368,18 +368,6 @@ def validate_user_password(password: str, user: User = None) -> None:
         raise APIBaseError(
             title='Password validation error',
             detail='The provided new password does not meet the password policy requirements',
-            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status=status.HTTP_400_BAD_REQUEST,
             errors=[{'field': 'password', 'messages': e.messages}],
         )
-
-
-
-def not_implemented():
-    """
-    Raises a 501 Not Implemented response for stubbed endpoints.
-    """
-    raise APIBaseError(
-        title='Not Implemented',
-        status=status.HTTP_501_NOT_IMPLEMENTED,
-        detail='This endpoint is stubbed. Fill in the handler logic.',
-    )

@@ -7,7 +7,6 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django_otp.plugins.otp_email.conf import settings
 from ninja import Router
 from ninja.responses import Response
 from ninja_jwt.tokens import RefreshToken
@@ -16,6 +15,7 @@ from two_factor.utils import default_device
 from common.utils import RESET_TOKEN_WINDOW, RESET_TOKEN_CACHE_KEY, VERIFICATION_USER_CACHE_KEY, \
     VERIFICATION_CONTEXT_CACHE_KEY, set_verification_context, get_context_or_session, validate_user_password, \
     set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
+from cs_cas import settings
 from myauth.schemas import *
 
 router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
@@ -65,21 +65,15 @@ def logout(request):
     """
     cookie = request.COOKIES.get(settings.REFRESH_COOKIE_KEY)
 
-    if not cookie:
-        raise APIBaseError(
-            title='Refresh token missing',
-            detail='No refresh token cookie found in the request headers',
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+    if cookie:
+        token = RefreshToken(cookie)
+        user = get_object_or_404(User, id=token['uid'])
 
-    token = RefreshToken(cookie)
-    user = get_object_or_404(User, id=token['uid'])
-
-    user_cache_key = SESSION_USER_CACHE_KEY.format(id=user.id)
-    cache.delete(user_cache_key)
+        user_cache_key = SESSION_USER_CACHE_KEY.format(id=user.id)
+        cache.delete(user_cache_key)
 
     resp = Response({
-        'message': 'Logged out successfully'
+        'message': 'Logged-in session has been cleared successfully.'
     })
 
     resp.delete_cookie(settings.REFRESH_COOKIE_KEY)

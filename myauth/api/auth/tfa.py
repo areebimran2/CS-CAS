@@ -23,6 +23,7 @@ from myauth.schemas import *
 router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
 User = get_user_model()
 
+
 @router.post('/totp/setup', response=TFASetupTOTPOut)
 def setup_tfa_totp(request, data: TFASetupTOTPIn):
     """
@@ -72,7 +73,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     """
     context = get_context_or_session(data.id)
     user = get_object_or_404(User, id=context.get('user_id'))
-    otp = pyotp.parse_uri(data.url) # Extract the OTP info from the provided URI (secret, name, etc.)
+    otp = pyotp.parse_uri(data.url)  # Extract the OTP info from the provided URI (secret, name, etc.)
 
     # Validate that the OTP URI corresponds to the user
     if user.email != otp.name:
@@ -93,7 +94,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
         )
 
     # Successfully verified, create and save the TOTP device for the user
-    device, _ = TOTPDevice.objects.create(user=user, name='default')
+    device = TOTPDevice.objects.create(user=user, name='default')
     secret_raw = base64.b32decode(otp.secret, casefold=True)
     device.key = binascii.hexlify(secret_raw).decode('utf-8')
     device.save()

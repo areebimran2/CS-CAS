@@ -4,7 +4,6 @@ from typing import Optional, List
 
 from django.contrib.auth import get_user_model
 from ninja import Schema, ModelSchema
-from ninja.orm import register_field
 from ninja_extra import status
 from pydantic import EmailStr, model_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
@@ -12,12 +11,10 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from common.exceptions import APIBaseError
 from myadmin.models import Role, Permission
 
+
 class Status(str, Enum):
     ACTIVE = 'active'
     SUSPENDED = 'suspended'
-
-
-register_field('PostgresEnumField', Status)
 
 class UserIn(Schema):
     first_name: str
@@ -49,10 +46,11 @@ class UserRoleSchema(ModelSchema):
 
 class UserOut(ModelSchema):
     roles: List[UserRoleSchema]  # Reverse reference to roles
+    status: Status
 
     class Meta:
         model = get_user_model()
-        fields = ['id', 'first_name', 'middle_name', 'last_name', 'designation', 'email', 'phone', 'status']
+        fields = ['id', 'first_name', 'middle_name', 'last_name', 'designation', 'email', 'phone']
 
     @staticmethod
     def resolve_phone(obj):

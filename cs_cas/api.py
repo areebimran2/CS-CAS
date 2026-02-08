@@ -6,10 +6,10 @@ from myauth.api import auth_router, me_router
 from myadmin.api import admin_router
 from catalogs.api import catalogs_router, fx_router, policies_router
 from ships_cabins.api import ships_router
-from routes.api import routes_router
+from routes.api import routes_router, places_router
 from seasons_sailings.api import seasons_router, sailings_router
 from pricing.api import pricing_router
-from selling.api import selling_router, holds_router, bookings_router, release_requests_router
+from selling.api import zoho_router, holds_router, bookings_router, release_requests_router
 from discounts.api import discounts_router
 from import_export.api import import_templates_router, imports_router, exports_router
 from reports.api import reports_router
@@ -37,6 +37,7 @@ api.add_router('ships/', ships_router)
 
 # E. Routes (Google Places)
 api.add_router('routes/', routes_router)
+api.add_router('places/', places_router)
 
 # F. Seasons & Sailings
 api.add_router('seasons/', seasons_router)
@@ -46,7 +47,7 @@ api.add_router('sailings/', sailings_router)
 api.add_router('pricing/', pricing_router)
 
 # I. Sell / Reserve / Book (Zoho UC Ref)
-api.add_router('selling/', selling_router)
+api.add_router('zoho/', zoho_router)
 api.add_router('holds/', holds_router)
 api.add_router('bookings/', bookings_router)
 api.add_router('release-requests/', release_requests_router)
