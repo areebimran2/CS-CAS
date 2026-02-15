@@ -41,7 +41,7 @@ def update_role(request, payload: PatchDict[RoleIn], role_id: str):
     role = Role.objects.get(id=role_id)
 
     data = dict(payload)
-    perms= data.pop('permissions', None)
+    perms = data.pop('permissions', None)
 
     # Update role permission set if role_id is provided
     # Note: The given permission set will replace ALL existing permissions
