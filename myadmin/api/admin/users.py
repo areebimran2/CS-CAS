@@ -39,11 +39,11 @@ def create_user(request, payload: UserIn):
 
 
 @router.put('/{user_id}', response=UserOut)
-def update_user(request, payload: PatchDict[UserIn], user_id: str):
+def update_user(request, payload: PatchDict[UserIn], user_id: uuid.UUID):
     """
     Update an existing user's details, including password and role association.
     """
-    user = User.objects.get(id=user_id)
+    user = get_object_or_404(User, id=user_id)
 
     data = dict(payload)
     password = data.pop('password', None)
@@ -69,7 +69,7 @@ def update_user(request, payload: PatchDict[UserIn], user_id: str):
 
 
 @router.get('/{user_id}', response=UserOut)
-def get_user(request, user_id: str):
+def get_user(request, user_id: uuid.UUID):
     """
     Retrieve detailed information about a specific user by their ID.
     """
@@ -78,7 +78,7 @@ def get_user(request, user_id: str):
 
 
 @router.post('/{user_id}/suspend', response=UserOut)
-def suspend_user(request, payload: MessageIn, user_id: str):
+def suspend_user(request, payload: MessageIn, user_id: uuid.UUID):
     """
     Suspend a user account, disabling their access to the system.
     """
@@ -91,7 +91,7 @@ def suspend_user(request, payload: MessageIn, user_id: str):
     # return user
 
 @router.post('/{user_id}/unsuspend', response=UserOut)
-def unsuspend_user(request, payload: MessageIn, user_id: str):
+def unsuspend_user(request, payload: MessageIn, user_id: uuid.UUID):
     """
     Reactivate a user account, granting their access to the system.
     """

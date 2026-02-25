@@ -1,3 +1,6 @@
+import uuid
+
+from django.shortcuts import get_object_or_404
 from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
@@ -23,11 +26,11 @@ def create_cabin_category(request, payload: CabinCategoryIn):
     return cabin_category
 
 @router.put('/{category_id}', response=CabinCategoryOut)
-def update_cabin_category(request,  payload: PatchDict[CabinCategoryIn], category_id: str):
+def update_cabin_category(request,  payload: PatchDict[CabinCategoryIn], category_id: uuid.UUID):
     """
     Updates an existing cabin category.
     """
-    cabin_category = CabinCategory.objects.get(id=category_id)
+    cabin_category = get_object_or_404(CabinCategory, id=category_id)
 
     for attr, value in payload.items():
         setattr(cabin_category, attr, value)

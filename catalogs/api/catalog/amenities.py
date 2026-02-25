@@ -1,3 +1,6 @@
+import uuid
+
+from django.shortcuts import get_object_or_404
 from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
@@ -25,11 +28,11 @@ def create_amenity(request, payload: AmenityIn):
 
 
 @router.put('/{amenity_id}', response=AmenityOut)
-def update_amenity(request, payload: PatchDict[AmenityIn], amenity_id: str):
+def update_amenity(request, payload: PatchDict[AmenityIn], amenity_id: uuid.UUID):
     """
     Update an existing amenity.
     """
-    amenity = Amenity.objects.get(id=amenity_id)
+    amenity = get_object_or_404(Amenity, id=amenity_id)
 
     for attr, value in payload.items():
         setattr(amenity, attr, value)

@@ -68,8 +68,8 @@ class CustomCostOut(ModelSchema):
         fields = ['id', 'key', 'label', 'is_active']
 
 class ManualFXIn(Schema):
-    base: str
-    quote: str
+    base: Currency
+    quote: Currency
     rate: Decimal = Field(max_digits=18, decimal_places=8)
 
 class ManualFXOut(ModelSchema):

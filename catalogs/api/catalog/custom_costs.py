@@ -1,3 +1,6 @@
+import uuid
+
+from django.shortcuts import get_object_or_404
 from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
@@ -26,11 +29,11 @@ def create_custom_cost(request, payload: CustomCostIn):
 
 
 @router.put('/{cost_id}', response=CustomCostOut)
-def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: str):
+def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: uuid.UUID):
     """
     Update an existing cost type.
     """
-    custom_cost = CabinCategory.objects.get(id=cost_id)
+    custom_cost = get_object_or_404(CustomCost, id=cost_id)
 
     for attr, value in payload.items():
         setattr(custom_cost, attr, value)

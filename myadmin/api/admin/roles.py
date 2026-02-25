@@ -1,3 +1,5 @@
+import uuid
+
 from django.shortcuts import get_object_or_404
 from ninja import Router, PatchDict
 from ninja_extra import paginate
@@ -34,11 +36,11 @@ def create_role(request, payload: RoleIn):
 
 
 @router.put('/{role_id}', response=RoleOut)
-def update_role(request, payload: PatchDict[RoleIn], role_id: str):
+def update_role(request, payload: PatchDict[RoleIn], role_id: uuid.UUID):
     """
     Update an existing role's details, including its associated permissions.
     """
-    role = Role.objects.get(id=role_id)
+    role = get_object_or_404(Role, id=role_id)
 
     data = dict(payload)
     perms = data.pop('permissions', None)
@@ -57,7 +59,7 @@ def update_role(request, payload: PatchDict[RoleIn], role_id: str):
     return role
 
 @router.get('/{role_id}', response=RoleOut)
-def get_role(request, role_id: str):
+def get_role(request, role_id: uuid.UUID):
     """
     Retrieve a specific role by its ID.
     """
