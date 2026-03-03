@@ -27,8 +27,8 @@ def create_role(request, payload: RoleIn):
     """
     Create a new role along with its associated permissions.
     """
-    payload_dict = payload.dict()
-    permissions = payload_dict.pop('permissions')
+    payload_dict = payload.dict(exclude=['permissions'])
+    permissions = payload.permissions
     role = Role.objects.create(**payload_dict)                  # Create the Role
     perms_qs = Permission.objects.filter(key__in=permissions)   # Obtain permissions queryset
     role.permissions.set(perms_qs)                              # Establish role-permission relationships

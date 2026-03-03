@@ -26,9 +26,9 @@ def create_user(request, payload: UserIn):
     """
     Create a new user along with their preferences and role association.
     """
-    payload_dict = payload.dict()
-    role_id = payload_dict.pop('role_id')
-    password = payload_dict.pop('password')
+    payload_dict = payload.dict(exclude=['role_id', 'password'])
+    role_id = payload.role_id
+    password = payload.password
     validate_user_password(password)  # Validate password
     user = User.objects.create(**payload_dict)  # Create the user
     user.set_password(password)

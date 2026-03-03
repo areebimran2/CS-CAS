@@ -18,10 +18,10 @@ def set_reserve_settings(request, payload: ReserveSettingsIn):
     """
     Sets a new active global reservation ruleset configuration.
     """
-    active_settings = ReserveSetting.objects.order_by('-created_at').first()
+    settings = ReserveSetting.objects.order_by('-created_at').first()
 
-    for attr, value in payload.items():
-        setattr(active_settings, attr, value)
+    for attr, value in payload.dict(exclude_unset=True).items():
+        setattr(settings, attr, value)
 
-    active_settings.save()
-    return active_settings
+    settings.save()
+    return settings
