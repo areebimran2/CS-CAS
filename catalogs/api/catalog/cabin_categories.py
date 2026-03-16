@@ -5,7 +5,8 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from catalogs.schemas import *
+from catalogs.models import CabinCategory
+from catalogs.schemas import CabinCategoryIn, CabinCategoryOut
 
 router = Router(tags=['C2. Cabin Categories'])
 

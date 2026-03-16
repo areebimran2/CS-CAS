@@ -1,5 +1,6 @@
 import uuid
 
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from ninja import Router, PatchDict
 from ninja_extra import paginate
@@ -7,7 +8,6 @@ from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from myadmin.models import Role, Permission
 from myadmin.schemas import RoleOut, RoleIn
-from myauth.schemas import *
 
 router = Router(tags=['B2. Roles'])
 User = get_user_model()

@@ -3,7 +3,9 @@ from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from discounts.schemas import *
+from discounts.schemas import (
+    DiscountOut, DiscountIn, DiscountActivateOut, DiscountDeactivateOut,
+)
 
 router = Router(tags=['J1. Discounts'])
 

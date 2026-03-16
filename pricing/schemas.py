@@ -24,7 +24,7 @@ class Status(str, Enum):
     PRICED = 'priced'
     UNPRICED = 'unpriced'
     REVIEW = 'review'
-    OVERRIDEN = 'overridden'
+    OVERRIDDEN = 'overridden'
     ARCHIVED = 'archived'
 
 class EffectiveSource(str, Enum):
@@ -42,7 +42,7 @@ class GraphCoverageOut(Schema):
     cabins_total: int
     priced: int
     unpriced: int
-    overriden: int
+    overridden: int
     archived: int
 
 class GraphCellsOut(Schema):

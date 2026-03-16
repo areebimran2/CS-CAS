@@ -1,8 +1,14 @@
+from typing import List
+
+from django.shortcuts import get_object_or_404
 from ninja import Router, Path
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from routes.schemas import *
+from routes.models import Route
+from routes.schemas import (
+    RouteLegOut, RouteLegIn, RouteLegUpdateIn, RouteLegReorderIn,
+)
 
 router = Router(tags=['E1. Routes + Legs'])
 
@@ -13,6 +19,9 @@ def list_route_legs(request, route_id: str = Path(...)):
     """
     Returns the ordered list of route legs (actual ports/stops) for the specified route.
     """
+    route = get_object_or_404(Route, id=route_id)
+    route_legs = route.routeleg_set.order_by('seq').all()
+    return route_legs
 
 @router.post('', response=RouteLegOut)
 def create_route_leg(request, payload: RouteLegIn, route_id: str = Path(...)):

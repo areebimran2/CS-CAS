@@ -5,7 +5,8 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from catalogs.schemas import *
+from pricing.models import CustomCost
+from catalogs.schemas import CustomCostIn, CustomCostOut
 
 router = Router(tags=['C3. Custom Costs'])
 

@@ -3,7 +3,12 @@ from ninja import Router, Path
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from ships_cabins.schemas import *
+from ships_cabins.schemas import (
+    CabinMapOut, CabinZoneOut, CabinMapIn,
+    UploadUrlIn, UploadUrlOut, CabinMapUpdateIn,
+    CabinZoneReplaceIn, CabinZoneReplaceOut, CabinZoneUpdateIn,
+    CabinMapActivateOut,
+)
 
 router = Router(tags=['D2. Cabin Maps'])
 

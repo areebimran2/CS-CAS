@@ -1,13 +1,14 @@
-import math
-
 from django.shortcuts import get_object_or_404
 from ninja import Router
 
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from catalogs.schemas import CancellationPolicyOut, CancellationPolicyIn, QuoteCancellationChargeIn, \
-    QuoteCancellationChargeOut, ChargeType
+from catalogs.schemas.cancellation_policies import (
+    CancellationPolicyOut, CancellationPolicyIn, QuoteCancellationChargeIn,
+    QuoteCancellationChargeOut,
+)
+from catalogs.services.cancellation import quote_cancellation_charge as _quote_cancellation_charge
 from selling.models import CancellationPolicy, CancellationPolicyTier
 
 router = Router(tags=['C6. Cancellation Policies'])
@@ -87,32 +88,4 @@ def quote_cancellation_charge(request, payload: QuoteCancellationChargeIn, polic
     Runs the cancellation tier engine using some cancellation policy to return an estimated charge and the tier that
     would apply (pre-booking).
     """
-    cancellation_policy = get_object_or_404(CancellationPolicy, id=policy_id)
-
-    days_out = math.ceil((payload.departure_date - payload.today).days)
-
-    tier = CancellationPolicyTier.objects.filter(
-        policy=cancellation_policy,
-        min_days__lte=days_out,
-        max_days__gte=days_out
-    ).order_by('-min_days').first()
-
-    # Assuming tier exists
-    if tier.charge_type == ChargeType.PERCENT_TOTAL:
-        charge = payload.total.amount * tier.value
-    elif tier.charge_type == ChargeType.PERCENT_COS:
-        charge = payload.cos.amount * tier.value
-    else:
-        # Fixed amount
-        charge = tier.value
-
-    clamped = max(0, min(charge, payload.total.amount))
-
-    return {
-        'days_out': days_out,
-        'tier': tier,
-        'charge': {
-            'amount': clamped,
-            'currency': payload.total.currency
-        }
-    }
+    return _quote_cancellation_charge(policy_id, payload.departure_date, payload.today, payload.total, payload.cos)

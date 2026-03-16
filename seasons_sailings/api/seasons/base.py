@@ -3,7 +3,10 @@ from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from seasons_sailings.schemas import *
+from seasons_sailings.schemas import (
+    SeasonOut, SeasonIn, AssignShips,
+    ValidateOverlapSeasonsIn, ValidateOverlapSeasonsOut,
+)
 
 router = Router(tags=['F1. Season'])
 

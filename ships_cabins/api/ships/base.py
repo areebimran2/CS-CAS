@@ -3,7 +3,10 @@ from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from ships_cabins.schemas import *
+from ships_cabins.schemas import (
+    ShipOut, ShipIn, ShipUpdateIn,
+    ShipCurrenciesIn, ShipAmenitiesIn, ShipPhotoIn,
+)
 
 router = Router(tags=['D1. Ships'])
 

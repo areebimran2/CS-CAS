@@ -8,3 +8,4 @@ class ErrorModel(Schema):
     detail: Optional[str] = None
     instance: Optional[str] = None
     errors: Optional[List[Dict[str, Any]]] = None
+

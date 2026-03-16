@@ -1,11 +1,16 @@
-from django.contrib.postgres.aggregates import JSONBAgg
+from typing import List
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
+from pydantic_extra_types.currency_code import Currency
 
-from catalogs.schemas import *
+from fx.models import ExchangeRatesManual
+from catalogs.schemas import (
+    ManualFXOut, ManualFXInList, LiveFXOut, RefreshLiveFXIn, CacheStatusOut,
+)
 
 router = Router(tags=['C4. FX'])
 

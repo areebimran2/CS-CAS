@@ -44,7 +44,7 @@ TAG_GROUPS = [
     {"name": "G. Pricing (Cost of Ship by Season/Sailing)",
      "tags": ["G1. Scope, View, Bulk, Margins & FX",
               "G2. Sailing-scoped Cabin Pricing"]},
-    {"name": "H) List Pricing (Totals & Drill-down)",
+    {"name": "H. List Pricing (Totals & Drill-down)",
      "tags": ["H1. List Pricing"]},
     {"name": "I. Sell / Reserve / Book",
      "tags": ["I1. UC Ref Lookup",

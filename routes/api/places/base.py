@@ -2,7 +2,7 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from routes.schemas import *
+from routes.schemas import PlaceOut, PlaceDetailsOut
 
 router = Router(tags=['E2. Places'])
 

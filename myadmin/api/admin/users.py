@@ -1,12 +1,15 @@
+import uuid
+
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from common.utils import validate_user_password
+from myauth.services.password import validate_user_password
 from myauth.models import UserPreference
-from myadmin.models import UserRole
-from myadmin.schemas import *
+from myadmin.models import Role, UserRole
+from myadmin.schemas import UserOut, UserIn, MessageIn
 
 router = Router(tags=['B1. Users'])
 User = get_user_model()

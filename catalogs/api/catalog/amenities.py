@@ -5,7 +5,8 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from catalogs.schemas import *
+from catalogs.models import Amenity
+from catalogs.schemas import AmenityIn, AmenityOut
 
 router = Router(tags=['C1. Amenities'])
 
