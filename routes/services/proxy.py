@@ -11,7 +11,7 @@ async def places_predictions_out(query: str):
             'input': query
         }, headers={
             'Content-Type': 'application/json',
-            'X-Goog-Api-Key': 'AIzaSyDPsTakZqZIero3W2_K39WckigJva6cnPA'
+            'X-Goog-Api-Key': ''
         })
         response.raise_for_status()
         data = response.json()
@@ -36,7 +36,7 @@ async def places_details_out(place_id: str):
     async with httpx.AsyncClient() as client:
         response = await client.get(f'{PLACES_BASE}/{place_id}', headers={
             'Content-Type': 'application/json',
-            'X-Goog-Api-Key': 'AIzaSyDPsTakZqZIero3W2_K39WckigJva6cnPA',
+            'X-Goog-Api-Key': '',
             'X-Goog-FieldMask': 'id,displayName,location,timeZone'
         })
         response.raise_for_status()

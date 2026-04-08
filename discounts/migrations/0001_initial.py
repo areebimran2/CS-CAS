@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('catalogs', '0001_initial'),
         ('seasons_sailings', '0001_initial'),
-        ('ships_cabins', '0001_initial'),
+        #('ships_cabins', '0001_initial'),
         ('pricing', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

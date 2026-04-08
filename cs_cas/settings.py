@@ -218,3 +218,10 @@ CACHES = {
     }
 }
 
+# Object Storage (S3 / MinIO)
+S3_ENDPOINT_URL = "http://localhost:9000"     # MinIO locally, real S3 URL in prod
+S3_ACCESS_KEY = "minioadmin"                  # from env vars in production
+S3_SECRET_KEY = "minioadmin"                  # from env vars in production
+S3_BUCKET_NAME = "cs-cas"                     # one bucket for the whole app
+S3_PUBLIC_URL = "http://localhost:9000/cs-cas" # base URL for public file access
+

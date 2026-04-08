@@ -52,6 +52,17 @@ class ShipAmenity(models.Model):
     class Meta:
         db_table = 'ship_amenities'
 
+class ShipPhoto(models.Model):
+    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
+    url = models.TextField(null=False)
+    sort_order = models.IntegerField(db_default=0, null=False)
+    created_at = models.DateTimeField(db_default=TxNow(), null=False)
+
+    ship = models.ForeignKey(Ship, on_delete=models.CASCADE, db_index=False)
+
+    class Meta:
+        db_table = 'ship_photos'
+
 class Cabin(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
     name = models.TextField(null=False)

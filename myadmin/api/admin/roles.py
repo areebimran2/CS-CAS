@@ -55,7 +55,6 @@ def update_role(request, payload: PatchDict[RoleIn], role_id: uuid.UUID):
         setattr(role, attr, value)
 
     role.save()
-
     return role
 
 @router.get('/{role_id}', response=RoleOut)

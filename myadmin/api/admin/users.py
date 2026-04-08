@@ -67,7 +67,6 @@ def update_user(request, payload: PatchDict[UserIn], user_id: uuid.UUID):
         setattr(user, attr, value)
 
     user.save()
-
     return user
 
 

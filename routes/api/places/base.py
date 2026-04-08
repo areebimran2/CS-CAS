@@ -1,6 +1,4 @@
-from ninja import Router, PatchDict
-from ninja_extra import paginate
-from ninja_extra.schemas import NinjaPaginationResponseSchema
+from ninja import Router
 
 from routes.schemas import PlacesPredictionsOut, PlaceDetailsOut
 from routes.services.proxy import places_predictions_out, places_details_out

@@ -59,16 +59,3 @@ class RouteLegUpdateIn(Schema):
 class RouteLegReorderIn(Schema):
     order: List[uuid.UUID]
 
-class PlacePrediction(Schema):
-    place_id: str
-    description: str
-
-class PlacesPredictionsOut(Schema):
-    predictions: List[PlacePrediction]
-
-class PlaceDetailsOut(Schema):
-    place_id: str
-    name: str
-    lat: Latitude
-    lng: Longitude
-    tz: Optional[str] = None

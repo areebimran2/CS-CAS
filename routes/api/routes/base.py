@@ -68,10 +68,10 @@ def update_route(request, payload: PatchDict[RouteIn], route_id):
                      route=route)
             for leg in legs]
 
+    route.routeleg_set.all().delete()
+
     RouteLeg.objects.bulk_create(
         legs,
-        update_conflicts=True,
-        update_fields=['seq', 'place_id', 'lat', 'lng', 'tz'],
         unique_fields=['seq', 'route']
     )
 
