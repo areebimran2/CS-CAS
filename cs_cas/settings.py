@@ -150,7 +150,11 @@ AUTH_USER_MODEL = 'myauth.User'
 # Two-Factor Authentication (SMS) and email delivery. The defaults print messages to the console; set real
 # backends per environment.
 TWO_FACTOR_SMS_GATEWAY = env.str('TWO_FACTOR_SMS_GATEWAY', default='two_factor.gateways.fake.Fake')
-EMAIL_BACKEND = env.str('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+MAILERS = {
+    "default": {
+        "BACKEND": env.str('EMAIL_BACKEND', default="django.core.mail.backends.console.EmailBackend"),
+    },
+}
 
 # Logging settings for debugging purposes
 LOGGING = {
