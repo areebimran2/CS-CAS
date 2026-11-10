@@ -167,4 +167,7 @@ cython_debug/
 # PyCharm
 .idea/
 
+# Kiro
+.kiro/
+
 # End of https://www.toptal.com/developers/gitignore/api/django
