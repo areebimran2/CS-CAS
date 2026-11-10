@@ -1,3 +1,7 @@
 -c requirements.txt
 
 pip-tools
+
+# Testing
+pytest
+pytest-django
