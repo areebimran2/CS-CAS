@@ -1,4 +1,5 @@
 import httpx
+from django.conf import settings
 
 PLACES_BASE = 'https://places.googleapis.com/v1/places'
 
@@ -11,7 +12,7 @@ async def places_predictions_out(query: str):
             'input': query
         }, headers={
             'Content-Type': 'application/json',
-            'X-Goog-Api-Key': ''
+            'X-Goog-Api-Key': settings.GOOGLE_PLACES_API_KEY
         })
         response.raise_for_status()
         data = response.json()
@@ -36,7 +37,7 @@ async def places_details_out(place_id: str):
     async with httpx.AsyncClient() as client:
         response = await client.get(f'{PLACES_BASE}/{place_id}', headers={
             'Content-Type': 'application/json',
-            'X-Goog-Api-Key': '',
+            'X-Goog-Api-Key': settings.GOOGLE_PLACES_API_KEY,
             'X-Goog-FieldMask': 'id,displayName,location,timeZone'
         })
         response.raise_for_status()

@@ -1,0 +1,25 @@
+django[argon2]
+psycopg[binary]
+django-environ
+django-pgtrigger
+
+# API
+django-ninja
+django-ninja-extra
+django-ninja-jwt
+pydantic[email]
+pydantic-extra-types[phonenumbers,pycountry]
+
+# Auth and 2FA
+django-otp
+django-two-factor-auth[phonenumbers]
+django-phonenumber-field[phonenumbers]
+pyotp
+
+# Cache
+django-redis
+redis[hiredis]
+
+# Integrations
+boto3
+httpx

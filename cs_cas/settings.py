@@ -1,29 +1,36 @@
 """
 Django settings for cs_cas project.
 
+Environment-specific values and secrets are read from environment variables. In local development they are loaded
+from the `.env` file at the project root (copy `.env.example` to `.env`). Real environment variables take precedence
+over values in `.env`.
+
 For more information on this file, see
-https://docs.djangoproject.com/en/6.0/topics/settings/
+https://docs.djangoproject.com/en/6.1/topics/settings/
 
 For the full list of settings and their values, see
-https://docs.djangoproject.com/en/6.0/ref/settings/
+https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 from datetime import timedelta
 from pathlib import Path
 
+import environ
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-fdwvs@5gt+&*2n7vo2)3!s)wdz#rhv+87r=yjp&cbw1@og$y55'
+# Core settings
+# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = env.str('DJANGO_SECRET_KEY')
 
-ALLOWED_HOSTS = []
+DEBUG = env.bool('DJANGO_DEBUG', default=False)
+
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=[])
 
 TWO_FACTOR_PATCH_ADMIN = False
 
@@ -94,16 +101,16 @@ WSGI_APPLICATION = 'cs_cas.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'cscasadmin',
-        'HOST': 'localhost',
-        'PORT': '5431',
+        'NAME': env.str('POSTGRES_DB'),
+        'USER': env.str('POSTGRES_USER'),
+        'PASSWORD': env.str('POSTGRES_PASSWORD'),
+        'HOST': env.str('POSTGRES_HOST', default='localhost'),
+        'PORT': env.int('POSTGRES_PORT', default=5432),
         'OPTIONS': {
             'connect_timeout': 5,
         }
@@ -112,7 +119,7 @@ DATABASES = {
 
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -130,7 +137,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Use Argon2 as the default storage algorithm for passwords
-# https://docs.djangoproject.com/en/6.0/topics/auth/passwords/
+# https://docs.djangoproject.com/en/6.1/topics/auth/passwords/
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.Argon2PasswordHasher",
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
@@ -141,9 +148,10 @@ PASSWORD_HASHERS = [
 
 AUTH_USER_MODEL = 'myauth.User'
 
-# Two-Factor Authentication settings (SMS and Email backend set up)
-TWO_FACTOR_SMS_GATEWAY = 'two_factor.gateways.fake.Fake' # Use a real gateway in production
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Use a real email backend in production
+# Two-Factor Authentication (SMS) and email delivery. The defaults print messages to the console; set real
+# backends per environment.
+TWO_FACTOR_SMS_GATEWAY = env.str('TWO_FACTOR_SMS_GATEWAY', default='two_factor.gateways.fake.Fake')
+EMAIL_BACKEND = env.str('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 
 # Logging settings for debugging purposes
 LOGGING = {
@@ -186,7 +194,7 @@ REFRESH_COOKIE_KEY = 'cscas-refresh'
 REFRESH_IDLE_TIMEOUT = timedelta(days=7)
 
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
+# https://docs.djangoproject.com/en/6.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -198,12 +206,12 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+# https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
+# https://docs.djangoproject.com/en/6.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -211,17 +219,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6378/0",
+        "LOCATION": env.str('REDIS_URL'),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     }
 }
 
-# Object Storage (S3 / MinIO)
-S3_ENDPOINT_URL = "http://localhost:9000"     # MinIO locally, real S3 URL in prod
-S3_ACCESS_KEY = "minioadmin"                  # from env vars in production
-S3_SECRET_KEY = "minioadmin"                  # from env vars in production
-S3_BUCKET_NAME = "cs-cas"                     # one bucket for the whole app
-S3_PUBLIC_URL = "http://localhost:9000/cs-cas" # base URL for public file access
+# Object Storage (S3-compatible: Silo locally, AWS S3 or similar in production)
+S3_ENDPOINT_URL = env.str('S3_ENDPOINT_URL')
+S3_ACCESS_KEY = env.str('S3_ACCESS_KEY')
+S3_SECRET_KEY = env.str('S3_SECRET_KEY')
+S3_BUCKET_NAME = env.str('S3_BUCKET_NAME')
+S3_PUBLIC_URL = env.str('S3_PUBLIC_URL')  # base URL for public file access
 
+# External integrations
+GOOGLE_PLACES_API_KEY = env.str('GOOGLE_PLACES_API_KEY', default='')
