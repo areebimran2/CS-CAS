@@ -1,26 +1,12 @@
 from django.db import models
 from django.contrib.postgres.functions import RandomUUID
-from django.contrib.postgres.fields import ArrayField
 
-from common.enums import HoldStatus, BookingStatus, CancellationChargeType
+from common.enums import HoldStatus, BookingStatus
 from common.fields import PostgresEnumField
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg
 
-class ReserveSetting(models.Model):
-    id = models.UUIDField(primary_key=True, default=RandomUUID, db_default=RandomUUID())
-    max_hold_minutes = models.IntegerField(db_default=2880, null=False) # -- e.g., 48h
-    reminder_scheduled_minutes = ArrayField(base_field=models.IntegerField(), db_default='{2880, 1440}', null=False) # -- 2d,1d before
-    allow_extensions = models.BooleanField(db_default=True, null=False)
-    max_extensions = models.IntegerField(db_default=1, null=False)
-    extension_minutes = models.IntegerField(db_default=1440, null=False)
-    created_at = models.DateTimeField(db_default=TxNow(), null=False)
-
-    created_by = models.ForeignKey('myauth.User', on_delete=models.DO_NOTHING, null=True,
-                                   db_index=False, db_column='created_by')
-
-    class Meta:
-        db_table = 'reserve_settings'
+# Reserve settings and cancellation policies are admin-managed policies and live in catalogs.models.
 
 class Hold(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
@@ -96,32 +82,4 @@ class Booking(models.Model):
         ]
         triggers = [
             set_updated_at_trg('trg_bookings_updated'),
-        ]
-
-
-class CancellationPolicy(models.Model):
-    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
-    name = models.TextField(null=False)
-    non_refundable = models.BooleanField(db_default=False, null=False)
-    created_at = models.DateTimeField(db_default=TxNow(), null=False)
-
-    class Meta:
-        db_table = 'cancellation_policies'
-
-class CancellationPolicyTier(models.Model):
-    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
-    min_days = models.IntegerField(null=False)
-    max_days = models.IntegerField(null=False)
-    charge_type = PostgresEnumField('cancellation_charge_type', choices=CancellationChargeType.choices, null=False)
-    value = models.DecimalField(max_digits=10, decimal_places=4, null=False)
-
-    policy = models.ForeignKey(CancellationPolicy, on_delete=models.CASCADE, null=False, db_index=False)
-
-    class Meta:
-        db_table = 'cancellation_policy_tiers'
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(min_days__lte=models.F('max_days')),
-                name='ck_days_order'
-            )
         ]

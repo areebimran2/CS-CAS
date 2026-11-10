@@ -6,7 +6,7 @@ from typing import List, Optional
 from ninja import Schema, ModelSchema
 from pydantic_extra_types.currency_code import Currency
 
-from selling.models import CancellationPolicy, CancellationPolicyTier
+from catalogs.models import CancellationPolicy, CancellationPolicyTier
 
 from pydantic import Field
 

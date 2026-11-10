@@ -7,7 +7,7 @@ from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 from pydantic_extra_types.currency_code import Currency
 
-from fx.models import ExchangeRatesManual
+from catalogs.models import ExchangeRatesManual
 from catalogs.schemas import (
     ManualFXOut, ManualFXInList, LiveFXOut, RefreshLiveFXIn, CacheStatusOut,
 )

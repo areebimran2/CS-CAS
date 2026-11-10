@@ -53,7 +53,7 @@ class DiscountTarget(models.Model):
         null=False,
     )
 
-    # The below is unsupported by Django 5.2.6, instead enforce uniqueness with a unique constraint.
+    # The below is unsupported by Django, instead enforce uniqueness with a unique constraint.
     # pk = models.CompositePrimaryKey('discount_id', 'target_kind', 'target_id')
 
 

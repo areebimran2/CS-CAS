@@ -1,4 +1,4 @@
- name: cs-cas
+name: cs-cas
 
 services:
   db:

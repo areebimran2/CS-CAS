@@ -65,7 +65,6 @@ INSTALLED_APPS = [
     'pricing',
     'discounts',
     'selling',
-    'fx',
     'reports',
 ]
 

@@ -6,7 +6,7 @@ from typing import List
 from ninja import Schema, ModelSchema
 from pydantic_extra_types.currency_code import Currency
 
-from fx.models import ExchangeRatesManual, FXRatesCache
+from catalogs.models import ExchangeRatesManual, FXRatesCache
 
 from pydantic import Field
 

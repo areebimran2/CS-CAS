@@ -9,7 +9,7 @@ from catalogs.schemas.cancellation_policies import (
     QuoteCancellationChargeOut,
 )
 from catalogs.services.cancellation import quote_cancellation_charge as _quote_cancellation_charge
-from selling.models import CancellationPolicy, CancellationPolicyTier
+from catalogs.models import CancellationPolicy, CancellationPolicyTier
 
 router = Router(tags=['C6. Cancellation Policies'])
 

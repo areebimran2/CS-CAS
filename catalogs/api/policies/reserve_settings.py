@@ -1,6 +1,6 @@
 from ninja import Router
 
-from selling.models import ReserveSetting
+from catalogs.models import ReserveSetting
 from catalogs.schemas import ReserveSettingsIn, ReserveSettingsOut
 
 router = Router(tags=['C5. Reserve Settings'])

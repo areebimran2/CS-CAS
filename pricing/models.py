@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.postgres.functions import RandomUUID
 
-from common.enums import CustomCostMode, CustomCostAppliesTo
-from common.fields import PostgresEnumField
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg
 
@@ -70,29 +68,12 @@ class CabinCostOverride(models.Model):
             set_updated_at_trg('trg_cabin_cost_ovr_updated'),
         ]
 
-class CustomCost(models.Model):
-    id = models.UUIDField(primary_key=True, db_default=RandomUUID())
-    key = models.TextField(null=False)
-    label = models.TextField(null=False)
-    mode = PostgresEnumField('custom_cost_mode', choices=CustomCostMode.choices, null=False)
-    applies_to = PostgresEnumField('custom_cost_applies_to', choices=CustomCostAppliesTo.choices, null=False)
-    is_active = models.BooleanField(db_default=True, null=False)
-    created_at = models.DateTimeField(db_default=TxNow(), null=False)
-
-    ships = models.ManyToManyField('ships_cabins.Ship', related_name='ship_custom_costs', through='ShipCustomCost')
-
-    class Meta:
-        db_table = 'custom_costs'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['key'],
-                name='custom_costs_key_key'
-            )
-        ]
+# The custom costs catalogue (CustomCost) is admin-managed and lives in catalogs.models. Pricing owns which costs
+# apply to each ship (ShipCustomCost) and their values per cabin and sailing (CabinCostCustom).
 
 class ShipCustomCost(models.Model):
     ship = models.ForeignKey('ships_cabins.Ship', on_delete=models.CASCADE, null=False, db_index=False)
-    custom_cost = models.ForeignKey(CustomCost, on_delete=models.CASCADE, null=False, db_index=False)
+    custom_cost = models.ForeignKey('catalogs.CustomCost', on_delete=models.CASCADE, null=False, db_index=False)
     pk = models.CompositePrimaryKey('ship_id', 'custom_cost_id')
 
     class Meta:
@@ -100,13 +81,14 @@ class ShipCustomCost(models.Model):
 
 class CabinCostCustom(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
-    value = models.DecimalField(max_digits=12, decimal_places=4)
-    percent = models.DecimalField(max_digits=6, decimal_places=4)
-    currency = models.CharField(max_length=3)
+    # Exactly one of value (mode=fixed) or percent (mode=percent, 0..1) is set; see ck_custom_value.
+    value = models.DecimalField(max_digits=12, decimal_places=4, null=True)
+    percent = models.DecimalField(max_digits=6, decimal_places=4, null=True)
+    currency = models.CharField(max_length=3, null=True)
 
     sailing = models.ForeignKey('seasons_sailings.Sailing', on_delete=models.CASCADE, null=False, db_index=False)
     cabin = models.ForeignKey('ships_cabins.Cabin', on_delete=models.RESTRICT, null=False, db_index=False)
-    custom_cost = models.ForeignKey(CustomCost, on_delete=models.RESTRICT, null=False, db_index=False)
+    custom_cost = models.ForeignKey('catalogs.CustomCost', on_delete=models.RESTRICT, null=False, db_index=False)
 
     class Meta:
         db_table = 'cabin_cost_customs'

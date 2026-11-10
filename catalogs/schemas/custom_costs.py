@@ -2,7 +2,7 @@ from enum import Enum
 
 from ninja import Schema, ModelSchema
 
-from pricing.models import CustomCost
+from catalogs.models import CustomCost
 
 
 class Mode(str, Enum):

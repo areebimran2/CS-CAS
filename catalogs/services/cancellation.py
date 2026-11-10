@@ -3,7 +3,7 @@ import math
 from django.shortcuts import get_object_or_404
 
 from catalogs.schemas.cancellation_policies import ChargeType
-from selling.models import CancellationPolicy, CancellationPolicyTier
+from catalogs.models import CancellationPolicy, CancellationPolicyTier
 
 
 def quote_cancellation_charge(policy_id, departure_date, today, total, cos):
