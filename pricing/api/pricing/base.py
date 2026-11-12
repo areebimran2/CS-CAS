@@ -1,11 +1,13 @@
 from ninja import Router
 from ninja_extra import paginate
 
+from common.access import requires
 from pricing.schemas import PricingGraphOut, PricingListOut, CabinOverrideIn
 
 router = Router(tags=['G1. Scope, View, Bulk, Margins & FX'])
 
 @router.get('/graph', response=PricingGraphOut)
+@requires('pricing.view')
 def get_pricing_graph(request, season_id, ship_id, sailing_ids, fx_mode, occupancy):
     """
     Pricing Interactive Graph view for a selected scope.
@@ -14,6 +16,7 @@ def get_pricing_graph(request, season_id, ship_id, sailing_ids, fx_mode, occupan
     """
 
 @router.get('/lines', response=PricingListOut)
+@requires('pricing.view')
 @paginate()
 def get_pricing_list(request, season_id, ship_id, sailing_ids, fx_mode, occupancy):
     """
@@ -23,6 +26,7 @@ def get_pricing_list(request, season_id, ship_id, sailing_ids, fx_mode, occupanc
     """
 
 @router.post('/bulk')
+@requires('pricing.edit')
 def pricing_bulk(request):
     """
     Bulk set pricing inputs (base/currency/single multiplier/custom costs) for a target set: Category / Deck /

@@ -6,6 +6,7 @@ from ninja.files import UploadedFile
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from common.storage import upload_file, delete_file
 from ships_cabins.models import Ship, ShipPhoto
 from ships_cabins.schemas import (
@@ -17,6 +18,7 @@ router = Router(tags=['D1. Ships'])
 
 
 @router.get('', response=NinjaPaginationResponseSchema[ShipListOut])
+@requires('ships.view')
 @paginate()
 def list_ships(request):
     """
@@ -26,6 +28,7 @@ def list_ships(request):
 
 
 @router.post('', response=ShipOut)
+@requires('ships.create')
 def create_ship(request, payload: ShipIn):
     """
     Create a new ship with  its currencies, and optionally amenities.
@@ -39,6 +42,7 @@ def create_ship(request, payload: ShipIn):
 
 
 @router.get('/{ship_id}', response=ShipDetailOut)
+@requires('ships.view')
 def get_ship(request, ship_id):
     """
     Retrieve a single ship with all its currencies, amenities, photos, and summary count
@@ -48,6 +52,7 @@ def get_ship(request, ship_id):
 
 
 @router.put('/{ship_id}', response=ShipOut)
+@requires('ships.edit')
 def update_ship(request, payload: ShipIn, ship_id):
     """
     FUll replacement of a ship's metadata, currencies, and amenities. The client sends the complete desired state;
@@ -70,6 +75,7 @@ def update_ship(request, payload: ShipIn, ship_id):
 
 
 @router.post('/{ship_id}/photos/upload-urls')
+@requires('ships.edit')
 def upload_ship_photo_urls(request, ship_id, payload: PhotoUploadUrlsIn):
     """
     Generate presigned URLs for the client to upload photos directly to object storage.
@@ -77,6 +83,7 @@ def upload_ship_photo_urls(request, ship_id, payload: PhotoUploadUrlsIn):
 
 
 @router.post('/{ship_id}/photos', response=ListPhotoOut)
+@requires('ships.edit')
 def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id):
     """
     Upload a photo to the ship gallery.
@@ -105,6 +112,7 @@ def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id):
 
 
 @router.post('/{ship_id}/photos/reorder', response=ListPhotoOut)
+@requires('ships.edit')
 def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id):
     """
     Update the sort order of the ships' gallery.
@@ -127,6 +135,7 @@ def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id):
 
 
 @router.delete('/{ship_id}/photos/{photo_id}', response={204: None})
+@requires('ships.edit')
 def delete_ship_photo(request, photo_id, ship_id):
     """
     Remove a specific photo from the ship gallery.

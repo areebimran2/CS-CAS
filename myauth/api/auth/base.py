@@ -1,6 +1,7 @@
 from ninja import Router
 
 from cs_cas import settings
+from common.access import public
 from myauth.schemas import (
     LoginIn, LoginOut, TokenOut, MessageOut,
     ForgotPasswordIn, ResetPasswordIn,
@@ -14,6 +15,7 @@ router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
 
 
 @router.post('/login', response=LoginOut)
+@public
 def login(request, data: LoginIn):
     """
     Check if the given user credentials are valid, then establish a login verification context. The context ID along
@@ -32,6 +34,7 @@ def login(request, data: LoginIn):
 
 
 @router.post('/logout', response=MessageOut)
+@public
 def logout(request):
     """
     Logout the user by deleting their session and refresh token cookie.
@@ -41,6 +44,7 @@ def logout(request):
 
 
 @router.post('/refresh', response=TokenOut)
+@public
 def refresh(request):
     """
     Refresh the access token using a valid refresh token from cookies.
@@ -50,6 +54,7 @@ def refresh(request):
 
 
 @router.post('/password/forgot', response=MessageOut)
+@public
 def forgot_password(request, data: ForgotPasswordIn):
     """
     Initiate the password reset process by sending a reset link to the user's email.
@@ -58,6 +63,7 @@ def forgot_password(request, data: ForgotPasswordIn):
 
 
 @router.post('/password/reset', response=MessageOut)
+@public
 def reset_password(request, data: ResetPasswordIn):
     """
     Complete the password reset process by verifying the token and setting a new password.

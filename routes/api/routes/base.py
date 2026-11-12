@@ -3,12 +3,14 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from routes.models import Route, RouteLeg
 from routes.schemas import RouteOut, RouteIn, RouteOutWithLegs
 
 router = Router(tags=['E1. Route'])
 
 @router.get('', response=NinjaPaginationResponseSchema[RouteOut])
+@requires('routes.view')
 @paginate()
 def list_routes(request):
     """
@@ -17,6 +19,7 @@ def list_routes(request):
     return Route.objects.all()
 
 @router.post('', response=RouteOutWithLegs)
+@requires('routes.create')
 def create_route(request, payload: RouteIn):
     """
     Creates a new route.
@@ -40,6 +43,7 @@ def create_route(request, payload: RouteIn):
     return route
 
 @router.get('/{route_id}', response=RouteOutWithLegs)
+@requires('routes.view')
 def get_route(request, route_id):
     """
     Returns a route by ID.
@@ -48,6 +52,7 @@ def get_route(request, route_id):
     return route
 
 @router.put('/{route_id}', response=RouteOutWithLegs)
+@requires('routes.edit')
 def update_route(request, payload: PatchDict[RouteIn], route_id):
     """
     Updates a routes base fields.

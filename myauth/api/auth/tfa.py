@@ -1,5 +1,6 @@
 from ninja import Router
 
+from common.access import public
 from myauth.schemas import (
     TFASetupTOTPIn, TFASetupTOTPOut,
     TFAConfirmTOTPIn, TFAConfirmOut,
@@ -14,6 +15,7 @@ router = Router(tags=['A1. Login / 2FA / Forgotten Password'])
 
 
 @router.post('/totp/setup', response=TFASetupTOTPOut)
+@public
 def setup_tfa_totp(request, data: TFASetupTOTPIn):
     """
     Initiate TOTP 2FA setup for the user by generating a TOTP secret and OTP URI.
@@ -24,6 +26,7 @@ def setup_tfa_totp(request, data: TFASetupTOTPIn):
 
 
 @router.post('/totp/confirm', response=TFAConfirmOut)
+@public
 def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
     """
     Confirm TOTP 2FA setup by verifying the provided passcode against the TOTP secret.
@@ -32,6 +35,7 @@ def confirm_tfa_totp(request, data: TFAConfirmTOTPIn):
 
 
 @router.post('/sms/send', response=TFAConfirmOut)
+@public
 def send_2fa_sms(request, data: TFASetupSMSIn, purpose: UnAuthPurpose = UnAuthPurpose.LOGIN):
     """
     Send an OTP SMS to the user's registered phone number for SMS 2FA verification.
@@ -40,6 +44,7 @@ def send_2fa_sms(request, data: TFASetupSMSIn, purpose: UnAuthPurpose = UnAuthPu
 
 
 @router.post('/verify', response=TokenOut)
+@public
 def verify_2fa(request, data: TFAVerifyIn, purpose: UnAuthPurpose = UnAuthPurpose.LOGIN):
     """
     Verify the provided 2FA passcode and establish a user session upon successful verification.

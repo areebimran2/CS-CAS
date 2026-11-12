@@ -1,5 +1,6 @@
 from ninja import NinjaAPI, Redoc
 
+from common.access import DenyUndeclared
 from common.exceptions import APIErrorManager
 from cs_cas.docs import TAG_GROUPS, TAGS
 from myauth.api import auth_router, me_router
@@ -16,6 +17,7 @@ from reports.api import reports_router
 
 api = NinjaAPI(docs=Redoc(),
                openapi_extra={"tags": TAGS, "x-tagGroups": TAG_GROUPS},
+               auth=DenyUndeclared(),
                )
 
 APIErrorManager(api)

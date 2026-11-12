@@ -1,11 +1,13 @@
 from ninja import Router
 
+from common.access import requires
 from routes.schemas import PlacesPredictionsOut, PlaceDetailsOut
 from routes.services.proxy import places_predictions_out, places_details_out
 
 router = Router(tags=['E2. Place'])
 
 @router.get('/autocomplete', response=PlacesPredictionsOut)
+@requires('routes.edit')
 async def get_places_autocomplete(request, query: str):
     """
     Returns a "Port (Place Search)" or suggestion list by using a proxy to Google Places autocomplete.
@@ -13,6 +15,7 @@ async def get_places_autocomplete(request, query: str):
     return await places_predictions_out(query)
 
 @router.get('/{place_id}', response=PlaceDetailsOut)
+@requires('routes.edit')
 async def get_places_details(request, place_id):
     """
     Given a place id from the autocomplete suggestion, returns minimal details required for

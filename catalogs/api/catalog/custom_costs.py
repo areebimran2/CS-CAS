@@ -5,6 +5,7 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from catalogs.models import CustomCost
 from catalogs.schemas import CustomCostIn, CustomCostOut
 
@@ -12,6 +13,7 @@ router = Router(tags=['C3. Custom Costs'])
 
 
 @router.get('', response=NinjaPaginationResponseSchema[CustomCostOut])
+@requires('catalogs.view')
 @paginate()
 def list_custom_costs(request):
     """
@@ -21,6 +23,7 @@ def list_custom_costs(request):
 
 
 @router.post('', response=CustomCostOut)
+@requires('catalogs.create')
 def create_custom_cost(request, payload: CustomCostIn):
     """
     Create a configurable cost type.
@@ -30,6 +33,7 @@ def create_custom_cost(request, payload: CustomCostIn):
 
 
 @router.put('/{cost_id}', response=CustomCostOut)
+@requires('catalogs.edit')
 def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: uuid.UUID):
     """
     Update an existing cost type.

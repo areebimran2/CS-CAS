@@ -3,6 +3,7 @@ from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from selling.schemas import (
     HoldOut, HoldIn, HoldExtensionOut, HoldReleaseOut,
     ReasonIn, ReleaseRequestOut,
@@ -11,6 +12,7 @@ from selling.schemas import (
 router = Router(tags=['I2. Reserve'])
 
 @router.get('', response=NinjaPaginationResponseSchema[HoldOut])
+@requires('selling.view')
 @paginate()
 def list_holds(request):
     """
@@ -18,18 +20,21 @@ def list_holds(request):
     """
 
 @router.get('/{hold_id}', response=HoldOut)
+@requires('selling.view')
 def get_hold(request, hold_id):
     """
     Returns a single holds details.
     """
 
 @router.post('', response=HoldOut)
+@requires('selling.reserve')
 def create_hold(request, payload: HoldIn):
     """
     Creates a new hold (reserve a cabin) with an expiry computed from the reserve policy (reserve_settings).
     """
 
 @router.post('/{hold_id}/extend', response=HoldExtensionOut)
+@requires('selling.reserve')
 def extend_hold(request, hold_id):
     """
     Extends a cabin hold expiry if the global reserve policy (reserve_settings) permits extensions.
@@ -38,6 +43,7 @@ def extend_hold(request, hold_id):
     """
 
 @router.post('/{hold_id}/release', response=HoldReleaseOut)
+@requires('selling.reserve')
 def release_hold(request, hold_id):
     """
     Releases a cabin hold early (freeing the cabin).
@@ -46,6 +52,7 @@ def release_hold(request, hold_id):
     """
 
 @router.post('/{hold_id}/release=request', response=ReleaseRequestOut)
+@requires('selling.reserve')
 def release_request_hold(request, payload: ReasonIn, hold_id):
     """
     Creates a release request when a cabin is held by another user. In other words, allows other users to request

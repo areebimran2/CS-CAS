@@ -4,6 +4,7 @@ from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from catalogs.schemas.cancellation_policies import (
     CancellationPolicyOut, CancellationPolicyIn, QuoteCancellationChargeIn,
     QuoteCancellationChargeOut,
@@ -15,6 +16,7 @@ router = Router(tags=['C6. Cancellation Policies'])
 
 
 @router.get('', response=NinjaPaginationResponseSchema[CancellationPolicyOut])
+@requires('policies.view')
 @paginate()
 def list_cancellation_policies(request):
     """
@@ -24,6 +26,7 @@ def list_cancellation_policies(request):
 
 
 @router.post('', response=CancellationPolicyOut)
+@requires('policies.create')
 def create_cancellation_policy(request, payload: CancellationPolicyIn):
     """
     Creates a new cabin cancellation policy.
@@ -46,6 +49,7 @@ def create_cancellation_policy(request, payload: CancellationPolicyIn):
 
 
 @router.get('/{policy_id}', response=CancellationPolicyOut)
+@requires('policies.view')
 def get_cancellation_policy(request, policy_id):
     """
     Returns a cabin cancellation policy.
@@ -57,6 +61,7 @@ def get_cancellation_policy(request, policy_id):
 
 
 @router.put('/{policy_id}', response=CancellationPolicyOut)
+@requires('policies.edit')
 def replace_cancellation_policy(request, payload: CancellationPolicyIn, policy_id):
     """
     Replaces a cabin cancellation policy and its tiers.
@@ -83,6 +88,7 @@ def replace_cancellation_policy(request, payload: CancellationPolicyIn, policy_i
     return cancellation_policy
 
 @router.post('/{policy_id}/quote', response=QuoteCancellationChargeOut)
+@requires('policies.view')
 def quote_cancellation_charge(request, payload: QuoteCancellationChargeIn, policy_id):
     """
     Runs the cancellation tier engine using some cancellation policy to return an estimated charge and the tier that

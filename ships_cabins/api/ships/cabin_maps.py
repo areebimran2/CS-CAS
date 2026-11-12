@@ -3,6 +3,7 @@ from ninja import Router, Path
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from ships_cabins.schemas import (
     CabinMapOut, CabinZoneOut, CabinMapIn,
     UploadUrlIn, UploadUrlOut, CabinMapUpdateIn,
@@ -14,6 +15,7 @@ router = Router(tags=['D2. Cabin Maps'])
 
 
 @router.get('', response=NinjaPaginationResponseSchema[CabinMapOut])
+@requires('ships.view')
 @paginate()
 def list_cabin_maps(request, ship_id: str = Path(...)):
     """
@@ -21,6 +23,7 @@ def list_cabin_maps(request, ship_id: str = Path(...)):
     """
 
 @router.get('/{map_id}/zones', response=NinjaPaginationResponseSchema[CabinZoneOut])
+@requires('ships.view')
 @paginate()
 def list_cabin_zone(request, map_id, ship_id: str = Path(...)):
     """
@@ -28,12 +31,14 @@ def list_cabin_zone(request, map_id, ship_id: str = Path(...)):
     """
 
 @router.get('/{map_id}', response=CabinMapOut)
+@requires('ships.view')
 def get_cabin_map(request, map_id, ship_id: str = Path(...)):
     """
     Returns a cabin map.
     """
 
 @router.post('', response=CabinMapOut)
+@requires('ships.create')
 def create_cabin_map(request, payload: CabinMapIn, ship_id: str = Path(...)):
     """
     Creates a draft for a new map version.
@@ -43,6 +48,7 @@ def create_cabin_map(request, payload: CabinMapIn, ship_id: str = Path(...)):
 
 
 @router.post('/{map_id}/upload-url', response=UploadUrlOut)
+@requires('ships.edit')
 def cabin_map_upload_url(request, payload: UploadUrlIn, map_id, ship_id: str = Path(...)):
     """
     Returns a presigned upload URL to upload a map asset directly to storage.
@@ -50,12 +56,14 @@ def cabin_map_upload_url(request, payload: UploadUrlIn, map_id, ship_id: str = P
 
 
 @router.put('/{map_id}', response=CabinMapOut)
+@requires('ships.edit')
 def update_cabin_map(request, payload: CabinMapUpdateIn, map_id, ship_id: str = Path(...)):
     """
     Update cabin map metadata and/or attach the uploaded asset (returned from the upload URL endpoint) to the map.
     """
 
 @router.put('/{map_id}/zones', response=CabinZoneReplaceOut)
+@requires('ships.edit')
 def replace_cabin_zones(request, payload: CabinZoneReplaceIn,  map_id, ship_id: str = Path(...)):
     """
     Saves the map zone geometry -> cabin mapping for the map.
@@ -67,6 +75,7 @@ def replace_cabin_zones(request, payload: CabinZoneReplaceIn,  map_id, ship_id: 
 
 
 @router.put('/{map_id}/zones/{zone_id}', response=CabinZoneOut)
+@requires('ships.edit')
 def update_cabin_zone(request, payload: CabinZoneUpdateIn, map_id, zone_id, ship_id: str = Path(...)):
     """
     Updates one zone from the specified map.
@@ -74,6 +83,7 @@ def update_cabin_zone(request, payload: CabinZoneUpdateIn, map_id, zone_id, ship
 
 
 @router.post('/{map_id}/activate', response=CabinMapActivateOut)
+@requires('ships.edit')
 def activate_cabin_map(request, map_id, ship_id: str = Path(...)):
     """
     Sets the specified map as the active map version. Demotes previous active to archive.

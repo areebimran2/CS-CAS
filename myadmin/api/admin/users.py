@@ -6,6 +6,7 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from myauth.services.password import validate_user_password
 from myauth.models import UserPreference
 from myadmin.models import Role, UserRole
@@ -16,6 +17,7 @@ User = get_user_model()
 
 
 @router.get('', response=NinjaPaginationResponseSchema[UserOut])
+@requires('users.view')
 @paginate()
 def list_users(request):
     """
@@ -25,6 +27,7 @@ def list_users(request):
 
 
 @router.post('', response=UserOut)
+@requires('users.create')
 def create_user(request, payload: UserIn):
     """
     Create a new user along with their preferences and role association.
@@ -42,6 +45,7 @@ def create_user(request, payload: UserIn):
 
 
 @router.put('/{user_id}', response=UserOut)
+@requires('users.edit')
 def update_user(request, payload: PatchDict[UserIn], user_id: uuid.UUID):
     """
     Update an existing user's details, including password and role association.
@@ -71,6 +75,7 @@ def update_user(request, payload: PatchDict[UserIn], user_id: uuid.UUID):
 
 
 @router.get('/{user_id}', response=UserOut)
+@requires('users.view')
 def get_user(request, user_id: uuid.UUID):
     """
     Retrieve detailed information about a specific user by their ID.
@@ -80,6 +85,7 @@ def get_user(request, user_id: uuid.UUID):
 
 
 @router.post('/{user_id}/suspend', response=UserOut)
+@requires('users.suspend')
 def suspend_user(request, payload: MessageIn, user_id: uuid.UUID):
     """
     Suspend a user account, disabling their access to the system.
@@ -93,6 +99,7 @@ def suspend_user(request, payload: MessageIn, user_id: uuid.UUID):
     # return user
 
 @router.post('/{user_id}/unsuspend', response=UserOut)
+@requires('users.suspend')
 def unsuspend_user(request, payload: MessageIn, user_id: uuid.UUID):
     """
     Reactivate a user account, granting their access to the system.

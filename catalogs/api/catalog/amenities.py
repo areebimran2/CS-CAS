@@ -5,6 +5,7 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from catalogs.models import Amenity
 from catalogs.schemas import AmenityIn, AmenityOut
 
@@ -12,6 +13,7 @@ router = Router(tags=['C1. Amenities'])
 
 
 @router.get('', response=NinjaPaginationResponseSchema[AmenityOut])
+@requires('catalogs.view')
 @paginate()
 def list_amenities(request):
     """
@@ -20,6 +22,7 @@ def list_amenities(request):
     return Amenity.objects.all()
 
 @router.post('', response=AmenityOut)
+@requires('catalogs.create')
 def create_amenity(request, payload: AmenityIn):
     """
     Creates a new amenity.
@@ -29,6 +32,7 @@ def create_amenity(request, payload: AmenityIn):
 
 
 @router.put('/{amenity_id}', response=AmenityOut)
+@requires('catalogs.edit')
 def update_amenity(request, payload: PatchDict[AmenityIn], amenity_id: uuid.UUID):
     """
     Update an existing amenity.

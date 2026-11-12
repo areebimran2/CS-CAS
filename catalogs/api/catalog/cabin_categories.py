@@ -5,12 +5,14 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from catalogs.models import CabinCategory
 from catalogs.schemas import CabinCategoryIn, CabinCategoryOut
 
 router = Router(tags=['C2. Cabin Categories'])
 
 @router.get('', response=NinjaPaginationResponseSchema[CabinCategoryOut])
+@requires('catalogs.view')
 @paginate()
 def list_cabin_categories(request):
     """
@@ -19,6 +21,7 @@ def list_cabin_categories(request):
     return CabinCategory.objects.all()
 
 @router.post('', response=CabinCategoryOut)
+@requires('catalogs.create')
 def create_cabin_category(request, payload: CabinCategoryIn):
     """
     Creates a new cabin category.
@@ -27,6 +30,7 @@ def create_cabin_category(request, payload: CabinCategoryIn):
     return cabin_category
 
 @router.put('/{category_id}', response=CabinCategoryOut)
+@requires('catalogs.edit')
 def update_cabin_category(request,  payload: PatchDict[CabinCategoryIn], category_id: uuid.UUID):
     """
     Updates an existing cabin category.

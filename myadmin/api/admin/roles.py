@@ -6,6 +6,7 @@ from ninja import Router, PatchDict
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
+from common.access import requires
 from myadmin.models import Role, Permission
 from myadmin.schemas import RoleOut, RoleIn
 
@@ -14,6 +15,7 @@ User = get_user_model()
 
 
 @router.get('', response=NinjaPaginationResponseSchema[RoleOut])
+@requires('roles.view')
 @paginate()
 def list_roles(request):
     """
@@ -23,6 +25,7 @@ def list_roles(request):
 
 
 @router.post('', response=RoleOut)
+@requires('roles.create')
 def create_role(request, payload: RoleIn):
     """
     Create a new role along with its associated permissions.
@@ -36,6 +39,7 @@ def create_role(request, payload: RoleIn):
 
 
 @router.put('/{role_id}', response=RoleOut)
+@requires('roles.edit')
 def update_role(request, payload: PatchDict[RoleIn], role_id: uuid.UUID):
     """
     Update an existing role's details, including its associated permissions.
@@ -58,6 +62,7 @@ def update_role(request, payload: PatchDict[RoleIn], role_id: uuid.UUID):
     return role
 
 @router.get('/{role_id}', response=RoleOut)
+@requires('roles.view')
 def get_role(request, role_id: uuid.UUID):
     """
     Retrieve a specific role by its ID.

@@ -7,6 +7,7 @@ from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 from pydantic_extra_types.currency_code import Currency
 
+from common.access import requires
 from catalogs.models import ExchangeRatesManual
 from catalogs.schemas import (
     ManualFXOut, ManualFXInList, LiveFXOut, RefreshLiveFXIn, CacheStatusOut,
@@ -16,6 +17,7 @@ router = Router(tags=['C4. FX'])
 
 
 @router.get('/manual-rates', response=NinjaPaginationResponseSchema[ManualFXOut])
+@requires('fx.view')
 @paginate()
 def list_manual_rates(request):
     """
@@ -25,6 +27,7 @@ def list_manual_rates(request):
 
 
 @router.put('/manual-rates', response=List[ManualFXOut])
+@requires('fx.edit')
 def upsert_manual_rates(request, payload: ManualFXInList):
     """
     Upserts (update + insert) a batch of manual rates in one action.
@@ -48,6 +51,7 @@ def upsert_manual_rates(request, payload: ManualFXInList):
 
 
 @router.get('/manual-rates/{base}/{quote}', response=ManualFXOut)
+@requires('fx.view')
 def get_manual_rate(request, base: Currency, quote: Currency):
     """
     Returns a single manual pair.
@@ -57,6 +61,7 @@ def get_manual_rate(request, base: Currency, quote: Currency):
 
 
 @router.get('/live-rates', response=List[LiveFXOut])
+@requires('fx.view')
 def get_live_rates(request, base: Currency, quotes: List[Currency]):
     """
     Returns specific cached live rates for a base currency and a set of quote currencies.
@@ -66,6 +71,7 @@ def get_live_rates(request, base: Currency, quotes: List[Currency]):
 
 
 @router.post('/live-rates/refresh', response=List[LiveFXOut])
+@requires('fx.edit')
 def refresh_live_rates(request, payload: RefreshLiveFXIn):
     """
     Returns force-refreshed live rates.
@@ -73,6 +79,7 @@ def refresh_live_rates(request, payload: RefreshLiveFXIn):
 
 
 @router.get('/status', response=CacheStatusOut)
+@requires('fx.view')
 def get_fx_status(request):
     """
     Returns health/staleness info for the FX provider/cache.

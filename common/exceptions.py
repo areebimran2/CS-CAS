@@ -1,5 +1,5 @@
 from common.schemas import ErrorModel
-from ninja.errors import ValidationError, HttpError
+from ninja.errors import ValidationError, HttpError, AuthenticationError
 
 
 class APIBaseError(HttpError):
@@ -18,7 +18,7 @@ class APIBaseError(HttpError):
         self.detail = detail or self.title
         self.instance = instance
         self.errors = errors
-        super().__init__(status_code=status, message=title)
+        super().__init__(status_code=self.status, message=self.title)
 
     def to_dict(self):
         return {
@@ -45,8 +45,15 @@ class ActiveHoldExistsError(APIBaseError):
 class FXRatesStaleError(APIBaseError):
     type = "FX_STALE"
 
+class NotAuthenticatedError(APIBaseError):
+    type = "NOT_AUTHENTICATED"
+    title = "Authentication required"
+    status = 401
+
 class PermissionDeniedError(APIBaseError):
     type = "PERMISSION_DENIED"
+    title = "Permission denied"
+    status = 403
 
 # Specific Error for validation failures
 class ValidationFailedError(APIBaseError):
@@ -66,6 +73,8 @@ class APIErrorManager:
     def register_handlers(self):
         self.api.add_exception_handler(APIBaseError, self.handle_api_errors)
         self.api.add_exception_handler(ValidationError, self.handle_validation_errors)
+        # ninja raises this when a protected endpoint is called without an access token
+        self.api.add_exception_handler(AuthenticationError, self.handle_missing_credentials)
 
     def handle_api_errors(self, request, exc: APIBaseError):
         error_model = ErrorModel(**exc.to_dict())
@@ -84,4 +93,8 @@ class APIErrorManager:
         )
 
         return self.api.create_response(request, error_model, status=422)
+
+    def handle_missing_credentials(self, request, exc: AuthenticationError):
+        error = NotAuthenticatedError(detail='Send an access token in the header: Authorization: Bearer <token>')
+        return self.handle_api_errors(request, error)
 
