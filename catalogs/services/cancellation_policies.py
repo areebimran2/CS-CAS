@@ -1,9 +1,30 @@
 import math
 
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 
-from catalogs.schemas.cancellation_policies import ChargeType
 from catalogs.models import CancellationPolicy, CancellationPolicyTier
+from common.enums import CancellationChargeType as ChargeType
+from common.services import update_instance
+
+
+@transaction.atomic
+def create_cancellation_policy(*, tiers: list[dict], **fields) -> CancellationPolicy:
+    policy = CancellationPolicy.objects.create(**fields)
+    _create_tiers(policy, tiers)
+    return policy
+
+
+@transaction.atomic
+def replace_cancellation_policy(policy: CancellationPolicy, *, tiers: list[dict], **fields) -> CancellationPolicy:
+    """Replace the policy's fields and all of its tiers. If any tier is invalid, nothing changes."""
+    policy.cancellationpolicytier_set.all().delete()
+    _create_tiers(policy, tiers)
+    return update_instance(policy, fields)
+
+
+def _create_tiers(policy, tiers):
+    CancellationPolicyTier.objects.bulk_create([CancellationPolicyTier(policy=policy, **tier) for tier in tiers])
 
 
 def quote_cancellation_charge(policy_id, departure_date, today, total, cos):

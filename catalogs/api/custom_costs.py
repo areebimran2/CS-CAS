@@ -1,13 +1,14 @@
 import uuid
 
 from django.shortcuts import get_object_or_404
-from ninja import Router, PatchDict
+from ninja import PatchDict, Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from common.access import requires
 from catalogs.models import CustomCost
 from catalogs.schemas import CustomCostIn, CustomCostOut
+from catalogs.services import custom_costs as service
+from common.access import requires
 
 router = Router(tags=['C3. Custom Costs'])
 
@@ -28,8 +29,7 @@ def create_custom_cost(request, payload: CustomCostIn):
     """
     Create a configurable cost type.
     """
-    custom_cost = CustomCost.objects.create(**payload.dict())
-    return custom_cost
+    return service.create_custom_cost(**payload.dict())
 
 
 @router.put('/{cost_id}', response=CustomCostOut)
@@ -38,10 +38,4 @@ def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: uuid.
     """
     Update an existing cost type.
     """
-    custom_cost = get_object_or_404(CustomCost, id=cost_id)
-
-    for attr, value in payload.items():
-        setattr(custom_cost, attr, value)
-
-    custom_cost.save()
-    return custom_cost
+    return service.update_custom_cost(get_object_or_404(CustomCost, id=cost_id), payload)

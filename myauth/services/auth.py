@@ -1,7 +1,8 @@
 import hashlib
 from datetime import timedelta
-from typing import Optional, Dict, Tuple, Any
+from typing import Any, Dict, Optional
 
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.cache import cache
@@ -14,12 +15,13 @@ from ninja_jwt.tokens import RefreshToken
 from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
-from cs_cas import settings
-from myauth.services.password import validate_user_password, RESET_TOKEN_CACHE_KEY, RESET_TOKEN_WINDOW
-from myauth.services.session import set_user_session, set_refresh_cookie, SESSION_USER_CACHE_KEY
+from myauth.services.password import RESET_TOKEN_CACHE_KEY, RESET_TOKEN_WINDOW, validate_user_password
+from myauth.services.session import SESSION_USER_CACHE_KEY, set_refresh_cookie, set_user_session
 from myauth.services.verification import (
-    set_verification_context, get_context_or_session,
-    VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY,
+    VERIFICATION_CONTEXT_CACHE_KEY,
+    VERIFICATION_USER_CACHE_KEY,
+    get_context_or_session,
+    set_verification_context,
 )
 
 User = get_user_model()

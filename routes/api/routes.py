@@ -1,13 +1,15 @@
 from django.shortcuts import get_object_or_404
-from ninja import Router, PatchDict
+from ninja import PatchDict, Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
-from routes.models import Route, RouteLeg
-from routes.schemas import RouteOut, RouteIn, RouteOutWithLegs
+from routes.models import Route
+from routes.schemas import RouteIn, RouteOut, RouteOutWithLegs
+from routes.services import routes as service
 
 router = Router(tags=['E1. Route'])
+
 
 @router.get('', response=NinjaPaginationResponseSchema[RouteOut])
 @requires('routes.view')
@@ -18,29 +20,15 @@ def list_routes(request):
     """
     return Route.objects.all()
 
+
 @router.post('', response=RouteOutWithLegs)
 @requires('routes.create')
 def create_route(request, payload: RouteIn):
     """
     Creates a new route.
     """
-    payload_dict = payload.dict(exclude=['legs'], exclude_unset=True)
-    route = Route.objects.create(**payload_dict)
+    return service.create_route(**payload.dict(exclude_unset=True))
 
-    legs = [RouteLeg(seq=leg.seq,
-                     place_id=leg.place_id,
-                     lat=leg.lat,
-                     lng=leg.lng,
-                     tz=leg.tz,
-                     route=route)
-             for leg in payload.legs]
-
-    RouteLeg.objects.bulk_create(
-        legs,
-        unique_fields=['seq', 'route']
-    )
-
-    return route
 
 @router.get('/{route_id}', response=RouteOutWithLegs)
 @requires('routes.view')
@@ -48,37 +36,13 @@ def get_route(request, route_id):
     """
     Returns a route by ID.
     """
-    route = get_object_or_404(Route, id=route_id)
-    return route
+    return get_object_or_404(Route, id=route_id)
+
 
 @router.put('/{route_id}', response=RouteOutWithLegs)
 @requires('routes.edit')
 def update_route(request, payload: PatchDict[RouteIn], route_id):
     """
-    Updates a routes base fields.
+    Updates a route. Only the fields sent are changed; sending `legs` replaces all of the route's legs.
     """
-    route = get_object_or_404(Route, id=route_id)
-
-    data = dict(payload)
-    legs = data.pop('legs', [])
-
-    for attr, value in data.items():
-        setattr(route, attr, value)
-
-    legs = [RouteLeg(seq=leg['seq'],
-                     place_id=leg['place_id'],
-                     lat=leg['lat'],
-                     lng=leg['lng'],
-                     tz=leg['tz'],
-                     route=route)
-            for leg in legs]
-
-    route.routeleg_set.all().delete()
-
-    RouteLeg.objects.bulk_create(
-        legs,
-        unique_fields=['seq', 'route']
-    )
-
-    route.save()
-    return route
+    return service.update_route(get_object_or_404(Route, id=route_id), payload)

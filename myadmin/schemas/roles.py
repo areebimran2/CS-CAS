@@ -1,11 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 from ninja_extra import status
 from pydantic import model_validator
 
 from common.exceptions import APIBaseError
-from myadmin.models import Role, Permission
+from myadmin.models import Permission, Role
 
 
 class RoleIn(Schema):
@@ -15,6 +15,8 @@ class RoleIn(Schema):
 
     @model_validator(mode='after')
     def permissions_exists(self):
+        if self.permissions is None:  # partial update (PatchDict) that doesn't change the permissions
+            return self
         existing = set(Permission.objects.filter(key__in=self.permissions).values_list('key', flat=True))
         missing = set(self.permissions) - existing
         if missing:

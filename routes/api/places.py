@@ -1,8 +1,8 @@
 from ninja import Router
 
 from common.access import requires
-from routes.schemas import PlacesPredictionsOut, PlaceDetailsOut
-from routes.services.proxy import places_predictions_out, places_details_out
+from routes.schemas import PlaceDetailsOut, PlacesPredictionsOut
+from routes.services.places import places_details_out, places_predictions_out
 
 router = Router(tags=['E2. Place'])
 

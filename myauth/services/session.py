@@ -1,13 +1,13 @@
 import secrets
 from typing import Optional
 
+from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 from ninja.responses import Response
 from ninja_jwt.tokens import Token
 
 from myauth.models import User
-from cs_cas import settings
 
 # User logged-in session utilities
 SESSION_USER_CACHE_KEY = 'session:user:{id}'

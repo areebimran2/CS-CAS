@@ -1,33 +1,57 @@
+from django.db import transaction
+
 from catalogs.models import Amenity
-from ships_cabins.models import ShipCurrency, ShipAmenity, Ship
+from common.services import update_instance
+from common.storage import delete_file, upload_file
+from ships_cabins.models import Ship, ShipAmenity, ShipCurrency, ShipPhoto
 
 
-def create_ship_joins(ship, currencies, amenities, new_amenities):
-    """
-    Creates the 'currencies' and 'new_amenities' ship join sets.
-    """
-    # Create ShipCurrency join rows for the selected currencies
-    ship_currencies = [ShipCurrency(ship=ship, currency=currency) for currency in currencies]
-    ShipCurrency.objects.bulk_create(ship_currencies)
+@transaction.atomic
+def create_ship(*, currencies, amenities=(), new_amenities=(), **fields) -> Ship:
+    """Create a ship with its currencies and amenities. `new_amenities` are names added to the master list."""
+    ship = Ship.objects.create(**fields)
+    _set_currencies_and_amenities(ship, currencies, amenities, new_amenities)
+    return ship
 
-    # Create any brand-new amenities in the master list
-    ship_new_amenities = [Amenity(name=name) for name in new_amenities]
-    Amenity.objects.bulk_create(
-        ship_new_amenities,
-        ignore_conflicts=True,
-        unique_fields=['name']
-    )
 
-    # Collect all amenity IDs: the explicitly-selected ones + the new ones
-    new_amenity_ids = Amenity.objects.filter(
-        name__in=new_amenities
-    ).values_list('id', flat=True)
+@transaction.atomic
+def replace_ship(ship: Ship, *, currencies, amenities=(), new_amenities=(), **fields) -> Ship:
+    """Replace the ship's details, currencies and amenities with the given ones."""
+    ship.shipcurrency_set.all().delete()
+    ship.shipamenity_set.all().delete()
+    _set_currencies_and_amenities(ship, currencies, amenities, new_amenities)
+    return update_instance(ship, fields)
 
-    all_amenity_ids = set(amenities) | set(new_amenity_ids)
 
-    # Create ShipAmenity join rows (same pattern as ShipCurrency)
-    ship_amenities = [ShipAmenity(ship=ship, amenity_id=aid) for aid in all_amenity_ids]
-    ShipAmenity.objects.bulk_create(
-        ship_amenities,
-        ignore_conflicts=True
-    )
+@transaction.atomic
+def add_ship_photos(ship: Ship, files) -> list[ShipPhoto]:
+    # File type and size checks are not implemented yet (spec D1: JPG/PNG/SVG/WEBP).
+    urls = [upload_file(file, folder=f'ships/{ship.id}') for file in files]
+    return ShipPhoto.objects.bulk_create([ShipPhoto(ship=ship, url=url) for url in urls])
+
+
+@transaction.atomic
+def reorder_ship_photos(ship: Ship, sort_orders: dict) -> list[ShipPhoto]:
+    """Set each photo's position from `sort_orders` (photo id -> sort order). Photos not listed keep theirs."""
+    photos = list(ship.shipphoto_set.all())
+    for photo in photos:
+        photo.sort_order = sort_orders.get(photo.id, photo.sort_order)
+    ShipPhoto.objects.bulk_update(photos, fields=['sort_order'])
+    return sorted(photos, key=lambda photo: (photo.sort_order, photo.created_at))
+
+
+@transaction.atomic
+def delete_ship_photo(photo: ShipPhoto) -> None:
+    photo.delete()
+    # Remove the stored file only once the row is gone for good, so a failed delete never loses the file.
+    transaction.on_commit(lambda: delete_file(photo.url))
+
+
+def _set_currencies_and_amenities(ship, currencies, amenity_ids, new_amenity_names):
+    ShipCurrency.objects.bulk_create([ShipCurrency(ship=ship, currency=currency) for currency in currencies])
+
+    Amenity.objects.bulk_create([Amenity(name=name) for name in new_amenity_names],
+                                ignore_conflicts=True, unique_fields=['name'])
+    new_ids = Amenity.objects.filter(name__in=new_amenity_names).values_list('id', flat=True)
+    ShipAmenity.objects.bulk_create([ShipAmenity(ship=ship, amenity_id=amenity_id)
+                                     for amenity_id in {*amenity_ids, *new_ids}], ignore_conflicts=True)

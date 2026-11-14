@@ -1,10 +1,12 @@
 from ninja import Router
 
-from .pricing.base import router as pricing_base_router
-from .pricing.cabins import router as pricing_cabins_router
-from .pricing.list import router as pricing_list_router
+from .cabins import router as cabins_router
+from .list_pricing import router as list_pricing_router
+from .pricing import router as scope_router
 
 pricing_router = Router()
-pricing_router.add_router('', pricing_base_router)
-pricing_router.add_router('{sailing_id}/cabins/', pricing_cabins_router)
-pricing_router.add_router('list/', pricing_list_router)
+pricing_router.add_router('', scope_router)
+pricing_router.add_router('{sailing_id}/cabins/', cabins_router)
+pricing_router.add_router('list/', list_pricing_router)
+
+__all__ = ['pricing_router']

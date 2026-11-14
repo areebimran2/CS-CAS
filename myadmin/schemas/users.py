@@ -1,9 +1,9 @@
 import uuid
 from enum import Enum
-from typing import Optional, List
+from typing import List, Optional
 
 from django.contrib.auth import get_user_model
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 from ninja_extra import status
 from pydantic import EmailStr, model_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
@@ -28,7 +28,8 @@ class UserIn(Schema):
 
     @model_validator(mode='after')
     def validate_role(self):
-        if not Role.objects.filter(id=self.role_id).exists():
+        # role_id is None only in partial updates (PatchDict) that don't change the role
+        if self.role_id is not None and not Role.objects.filter(id=self.role_id).exists():
             raise APIBaseError(
                 title='Invalid role',
                 detail='The specified role does not exist',

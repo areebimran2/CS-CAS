@@ -1,17 +1,21 @@
 from typing import List
 
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 from pydantic_extra_types.currency_code import Currency
 
-from common.access import requires
 from catalogs.models import ExchangeRatesManual
 from catalogs.schemas import (
-    ManualFXOut, ManualFXInList, LiveFXOut, RefreshLiveFXIn, CacheStatusOut,
+    CacheStatusOut,
+    LiveFXOut,
+    ManualFXInList,
+    ManualFXOut,
+    RefreshLiveFXIn,
 )
+from catalogs.services import fx as service
+from common.access import requires
 
 router = Router(tags=['C4. FX'])
 
@@ -32,22 +36,7 @@ def upsert_manual_rates(request, payload: ManualFXInList):
     """
     Upserts (update + insert) a batch of manual rates in one action.
     """
-    now = timezone.now()
-
-    pairs = [ExchangeRatesManual(base=pair.base,
-                                 quote=pair.quote,
-                                 rate=pair.rate,
-                                 updated_at=now)
-             for pair in payload.rates]
-
-    upsert_pairs = ExchangeRatesManual.objects.bulk_create(
-        pairs,
-        update_conflicts=True,
-        update_fields=['rate', 'updated_at'],
-        unique_fields=['base', 'quote']
-    )
-
-    return upsert_pairs
+    return service.upsert_manual_rates(payload.dict()['rates'])
 
 
 @router.get('/manual-rates/{base}/{quote}', response=ManualFXOut)

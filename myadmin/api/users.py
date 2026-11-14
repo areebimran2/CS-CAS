@@ -2,15 +2,13 @@ import uuid
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from ninja import Router, PatchDict
+from ninja import PatchDict, Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
-from myauth.services.password import validate_user_password
-from myauth.models import UserPreference
-from myadmin.models import Role, UserRole
-from myadmin.schemas import UserOut, UserIn, MessageIn
+from myadmin.schemas import MessageIn, UserIn, UserOut
+from myadmin.services import users as service
 
 router = Router(tags=['B1. Users'])
 User = get_user_model()
@@ -32,16 +30,7 @@ def create_user(request, payload: UserIn):
     """
     Create a new user along with their preferences and role association.
     """
-    payload_dict = payload.dict(exclude=['role_id', 'password'])
-    role_id = payload.role_id
-    password = payload.password
-    validate_user_password(password)  # Validate password
-    user = User.objects.create(**payload_dict)  # Create the user
-    user.set_password(password)
-    user.save()
-    UserPreference.objects.create(user=user)  # Create user preferences
-    UserRole.objects.create(user=user, role_id=role_id)  # Establish user-role relationship
-    return user
+    return service.create_user(**payload.dict())
 
 
 @router.put('/{user_id}', response=UserOut)
@@ -50,28 +39,7 @@ def update_user(request, payload: PatchDict[UserIn], user_id: uuid.UUID):
     """
     Update an existing user's details, including password and role association.
     """
-    user = get_object_or_404(User, id=user_id)
-
-    data = dict(payload)
-    password = data.pop('password', None)
-    role_id = data.pop('role_id', None)
-
-    # Update password if provided
-    if password is not None:
-        validate_user_password(password, user=user)
-        user.set_password(password)
-
-    # Update user-role relationship if role_id is provided
-    # Note: This will replace existing roles with the new one
-    if role_id is not None:
-        role = get_object_or_404(Role, id=role_id)
-        user.roles.set([role])
-
-    for attr, value in data.items():
-        setattr(user, attr, value)
-
-    user.save()
-    return user
+    return service.update_user(get_object_or_404(User, id=user_id), payload)
 
 
 @router.get('/{user_id}', response=UserOut)

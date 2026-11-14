@@ -1,14 +1,13 @@
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 from enum import Enum
-from typing import List, Optional
+from typing import List
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
+from pydantic import Field
 from pydantic_extra_types.currency_code import Currency
 
 from catalogs.models import CancellationPolicy, CancellationPolicyTier
-
-from pydantic import Field
 
 
 class ChargeType(str, Enum):
@@ -40,7 +39,7 @@ class CancellationPolicyTierOut(ModelSchema):
 
 class CancellationPolicyIn(Schema):
     name: str
-    non_refundable: Optional[bool] = None
+    non_refundable: bool = False
     tiers: List[CancellationPolicyTierIn] = Field(min_length=1)
 
 

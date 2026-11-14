@@ -1,14 +1,21 @@
+from django.conf import settings
 from ninja import Router
 
-from cs_cas import settings
 from common.access import public
 from myauth.schemas import (
-    LoginIn, LoginOut, TokenOut, MessageOut,
-    ForgotPasswordIn, ResetPasswordIn,
+    ForgotPasswordIn,
+    LoginIn,
+    LoginOut,
+    MessageOut,
+    ResetPasswordIn,
+    TokenOut,
 )
 from myauth.services.auth import (
-    authenticate_user, logout_user, refresh_session,
-    initiate_password_reset, complete_password_reset,
+    authenticate_user,
+    complete_password_reset,
+    initiate_password_reset,
+    logout_user,
+    refresh_session,
 )
 
 router = Router(tags=['A1. Login / 2FA / Forgotten Password'])

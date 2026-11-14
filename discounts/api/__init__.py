@@ -1,6 +1,3 @@
-from ninja import Router
+from .discounts import router as discounts_router
 
-from .discounts.base import router as discounts_base_router
-
-discounts_router = Router()
-discounts_router.add_router('', discounts_base_router)
+__all__ = ['discounts_router']

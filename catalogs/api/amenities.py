@@ -1,13 +1,14 @@
 import uuid
 
 from django.shortcuts import get_object_or_404
-from ninja import Router, PatchDict
+from ninja import PatchDict, Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
-from common.access import requires
 from catalogs.models import Amenity
 from catalogs.schemas import AmenityIn, AmenityOut
+from catalogs.services import amenities as service
+from common.access import requires
 
 router = Router(tags=['C1. Amenities'])
 
@@ -21,14 +22,14 @@ def list_amenities(request):
     """
     return Amenity.objects.all()
 
+
 @router.post('', response=AmenityOut)
 @requires('catalogs.create')
 def create_amenity(request, payload: AmenityIn):
     """
     Creates a new amenity.
     """
-    amenity = Amenity.objects.create(**payload.dict())
-    return amenity
+    return service.create_amenity(**payload.dict())
 
 
 @router.put('/{amenity_id}', response=AmenityOut)
@@ -38,9 +39,4 @@ def update_amenity(request, payload: PatchDict[AmenityIn], amenity_id: uuid.UUID
     Update an existing amenity.
     """
     amenity = get_object_or_404(Amenity, id=amenity_id)
-
-    for attr, value in payload.items():
-        setattr(amenity, attr, value)
-
-    amenity.save()
-    return amenity
+    return service.update_amenity(amenity, payload)
