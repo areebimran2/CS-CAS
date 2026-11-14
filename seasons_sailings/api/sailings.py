@@ -1,13 +1,15 @@
 from ninja import Router
-
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
 from seasons_sailings.schemas import (
-    SailingOut, SailingIn,
-    ValidateOverlapSailingsIn, ValidateOverlapSailingsOut,
-    SummaryOut, CabinAvailabilityOut,
+    CabinAvailabilityOut,
+    SailingIn,
+    SailingOut,
+    SummaryOut,
+    ValidateOverlapSailingsIn,
+    ValidateOverlapSailingsOut,
 )
 from ships_cabins.schemas import CabinOut
 

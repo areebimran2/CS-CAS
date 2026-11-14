@@ -1,6 +1,6 @@
 from enum import Enum
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
 from catalogs.models import CustomCost
 

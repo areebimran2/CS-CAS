@@ -1,15 +1,18 @@
 from typing import Union
 
 from ninja import Router
-
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
 from selling.schemas import (
-    BookingOut, BookingInFromHold, BookingInDirect,
-    CancellationQuoteIn, CancellationQuoteOut,
-    CancellationIn, CancellationOut,
+    BookingInDirect,
+    BookingInFromHold,
+    BookingOut,
+    CancellationIn,
+    CancellationOut,
+    CancellationQuoteIn,
+    CancellationQuoteOut,
 )
 
 router = Router(tags=['I3 + I4. Booking'])

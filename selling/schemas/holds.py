@@ -2,7 +2,7 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
 from selling.models import Hold, ReleaseRequest
 

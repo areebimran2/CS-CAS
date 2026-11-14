@@ -3,12 +3,12 @@ from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import Schema
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 from pydantic import Field
 from pydantic_extra_types.currency_code import Currency
 
-from catalogs.schemas import MoneyOut, Mode, AppliesTo
+from catalogs.schemas import AppliesTo, Mode, MoneyOut
 from ships_cabins.schemas import CabinOut
 
 

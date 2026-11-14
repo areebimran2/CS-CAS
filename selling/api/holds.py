@@ -1,12 +1,15 @@
 from ninja import Router
-
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
 from selling.schemas import (
-    HoldOut, HoldIn, HoldExtensionOut, HoldReleaseOut,
-    ReasonIn, ReleaseRequestOut,
+    HoldExtensionOut,
+    HoldIn,
+    HoldOut,
+    HoldReleaseOut,
+    ReasonIn,
+    ReleaseRequestOut,
 )
 
 router = Router(tags=['I2. Reserve'])

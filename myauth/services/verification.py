@@ -1,11 +1,12 @@
 import secrets
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from django.core.cache import cache
 from ninja_extra import status
 
 from common.exceptions import APIBaseError
 from myauth.models import User
+from myauth.services.session import SESSION_USER_CACHE_KEY
 
 # User verification context utilities
 VERIFICATION_CONTEXT_CACHE_KEY = 'verification:context:{id}'
@@ -17,9 +18,6 @@ PHONE_CHANGE_CACHE_KEY = 'phone-change:{id}'
 PHONE_CHANGE_OLD_VERIFIED = 'old-verified'
 PHONE_CHANGE_NEW_AWAITING = 'new-awaiting-verification'
 PHONE_CHANGE_WINDOW = 300  # 5 minutes
-
-# Session cache key (imported here for get_context_or_session lookup)
-from myauth.services.session import SESSION_USER_CACHE_KEY
 
 
 def set_verification_context(user: User, add_context: Optional[Dict[str, Any]] = None) -> str:

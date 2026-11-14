@@ -1,19 +1,19 @@
 from ninja import NinjaAPI, Redoc
 
+from catalogs.api import catalogs_router, fx_router, policies_router
 from common.access import DenyUndeclared
 from common.exceptions import APIErrorManager
 from cs_cas.docs import TAG_GROUPS, TAGS
-from myauth.api import auth_router, me_router
-from myadmin.api import admin_router
-from catalogs.api import catalogs_router, fx_router, policies_router
-from ships_cabins.api import ships_router
-from routes.api import routes_router, places_router
-from seasons_sailings.api import seasons_router, sailings_router
-from pricing.api import pricing_router
-from selling.api import zoho_router, holds_router, bookings_router, release_requests_router
 from discounts.api import discounts_router
-from import_export.api import import_templates_router, imports_router, exports_router
+from import_export.api import exports_router, import_templates_router, imports_router
+from myadmin.api import admin_router
+from myauth.api import auth_router, me_router
+from pricing.api import pricing_router
 from reports.api import reports_router
+from routes.api import places_router, routes_router
+from seasons_sailings.api import sailings_router, seasons_router
+from selling.api import bookings_router, holds_router, release_requests_router, zoho_router
+from ships_cabins.api import ships_router
 
 api = NinjaAPI(docs=Redoc(),
                openapi_extra={"tags": TAGS, "x-tagGroups": TAG_GROUPS},

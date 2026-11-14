@@ -1,8 +1,8 @@
 import uuid
 from enum import Enum
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 from pydantic import FileUrl, HttpUrl
 
 from ships_cabins.models import CabinMap, CabinMapZone

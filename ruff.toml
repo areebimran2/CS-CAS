@@ -1,0 +1,11 @@
+# Ruff lints the code: `make lint` reports problems, `make fix` repairs the ones it can.
+line-length = 120
+extend-exclude = ["*/migrations/*"]
+
+[lint]
+# E/W: style errors, F: real bugs (undefined names, unused imports), I: import order.
+select = ["E", "W", "F", "I"]
+
+[lint.per-file-ignores]
+# Package __init__ files re-export their modules' names.
+"__init__.py" = ["F401", "F403"]

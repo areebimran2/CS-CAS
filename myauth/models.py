@@ -1,15 +1,14 @@
-from django.db import models
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.postgres.functions import RandomUUID
+from django.db import models
 from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
 from common.enums import UserStatus
 from common.fields import PostgresEnumField
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg
-
-from phonenumber_field.modelfields import PhoneNumberField
 
 
 class UserManager(BaseUserManager):

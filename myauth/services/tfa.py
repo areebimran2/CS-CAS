@@ -1,9 +1,8 @@
 import base64
 import binascii
-from typing import Dict, Any
+from typing import Dict
 
 import pyotp
-
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
@@ -16,13 +15,18 @@ from two_factor.plugins.phonenumber.models import PhoneDevice
 
 from common.exceptions import APIBaseError
 from myauth.services.otp import (
-    generate_cached_challenge, OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, verify_cached_otp,
+    OTP_ATTEMPT_CACHE_KEY,
+    OTP_HASH_CACHE_KEY,
+    generate_cached_challenge,
+    verify_cached_otp,
 )
+from myauth.services.session import set_refresh_cookie, set_user_session
 from myauth.services.verification import (
-    VERIFICATION_USER_CACHE_KEY, VERIFICATION_CONTEXT_CACHE_KEY,
-    get_context_or_session, set_verification_context,
+    VERIFICATION_CONTEXT_CACHE_KEY,
+    VERIFICATION_USER_CACHE_KEY,
+    get_context_or_session,
+    set_verification_context,
 )
-from myauth.services.session import set_user_session, set_refresh_cookie
 
 User = get_user_model()
 

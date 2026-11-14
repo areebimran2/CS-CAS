@@ -2,9 +2,9 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
-from selling.models import Hold, Booking
+from selling.models import Booking, Hold
 
 
 class CabinStatus(str, Enum):

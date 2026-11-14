@@ -1,10 +1,11 @@
-from django.db import models
-from django.contrib.postgres.functions import RandomUUID
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import DateRangeField, RangeOperators
+from django.contrib.postgres.functions import RandomUUID
+from django.db import models
 
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg
+
 
 class Season(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
@@ -73,8 +74,9 @@ class Sailing(models.Model):
                 index_type='GIST',
                 expressions=[
                     (models.F('ship'), RangeOperators.EQUAL),
-                    (models.Func(models.F('departure_date'), models.F('departure_date') + models.F('nights'), models.Value('[)'),
-                                 function='daterange', output_field=DateRangeField()), RangeOperators.OVERLAPS),
+                    (models.Func(models.F('departure_date'), models.F('departure_date') + models.F('nights'),
+                                 models.Value('[)'), function='daterange', output_field=DateRangeField()),
+                     RangeOperators.OVERLAPS),
                 ],
                 name='sailings_no_overlap_per_ship'
             )

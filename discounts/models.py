@@ -1,10 +1,11 @@
-from django.db import models
 from django.contrib.postgres.functions import RandomUUID
+from django.db import models
 from django.db.models.functions import Coalesce
 
-from common.enums import DiscountKind, SalesChannel, DiscountStatus
+from common.enums import DiscountKind, DiscountStatus, SalesChannel
 from common.fields import PostgresEnumField
 from common.functions import TxNow
+
 
 class Discount(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
@@ -16,7 +17,8 @@ class Discount(models.Model):
     ends_at = models.DateTimeField(null=False)
     min_margin_b2b = models.DecimalField(max_digits=6, decimal_places=4, db_default=0.05, null=False)
     min_margin_b2c = models.DecimalField(max_digits=6, decimal_places=4, db_default=0.10, null=False)
-    status = PostgresEnumField('discount_status', db_default=DiscountStatus.SCHEDULED, choices=DiscountStatus.choices, null=False)
+    status = PostgresEnumField('discount_status', db_default=DiscountStatus.SCHEDULED, choices=DiscountStatus.choices,
+                               null=False)
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
 
     created_by = models.ForeignKey('myauth.User', on_delete=models.DO_NOTHING, null=True,

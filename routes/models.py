@@ -1,8 +1,9 @@
-from django.db import models
 from django.contrib.postgres.functions import RandomUUID
+from django.db import models
 
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg
+
 
 class Route(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())

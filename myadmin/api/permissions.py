@@ -1,9 +1,9 @@
 from ninja import Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
+
 from common.access import requires
 from myadmin.models import Permission
-
 from myadmin.schemas import PermissionOut
 
 router = Router(tags=['B3. Permissions'])

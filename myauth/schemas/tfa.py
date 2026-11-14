@@ -1,6 +1,6 @@
-from django.contrib.auth import get_user_model
-from ninja import Schema
 from enum import Enum
+
+from ninja import Schema
 
 
 # TFA endpoint schemas

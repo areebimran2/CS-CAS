@@ -1,6 +1,4 @@
 from ninja import Router
-
-from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires

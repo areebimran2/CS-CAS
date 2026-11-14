@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 from types import SimpleNamespace
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from django.core.cache import cache
 from django_otp.models import Device

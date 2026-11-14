@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from ninja import Schema
 from pydantic_extra_types.coordinate import Latitude, Longitude

@@ -2,13 +2,21 @@ from ninja import Router
 
 from common.access import public
 from myauth.schemas import (
-    TFASetupTOTPIn, TFASetupTOTPOut,
-    TFAConfirmTOTPIn, TFAConfirmOut,
-    TFASetupSMSIn, TFAVerifyIn,
-    TFAMethod, UnAuthPurpose, TokenOut,
+    TFAConfirmOut,
+    TFAConfirmTOTPIn,
+    TFAMethod,
+    TFASetupSMSIn,
+    TFASetupTOTPIn,
+    TFASetupTOTPOut,
+    TFAVerifyIn,
+    TokenOut,
+    UnAuthPurpose,
 )
 from myauth.services.tfa import (
-    setup_totp, confirm_totp, send_sms_otp, verify_2fa_and_create_session,
+    confirm_totp,
+    send_sms_otp,
+    setup_totp,
+    verify_2fa_and_create_session,
 )
 
 router = Router(tags=['A1. Login / 2FA / Forgotten Password'])

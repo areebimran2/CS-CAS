@@ -14,7 +14,7 @@ class MyadminConfig(AppConfig):
 def sync_permissions(apps, using=DEFAULT_DB_ALIAS, **kwargs):
     """
     Copy the permission catalogue into the `permissions` table after every `migrate`, adding new keys and updating
-    descriptions. Django creates its own permissions the same way. Keys removed from the catalogue are left in the table.
+    descriptions. Django creates its own permissions the same way. Keys removed from the catalogue stay in the table.
     """
     from common.permissions import PERMISSIONS
 

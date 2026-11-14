@@ -9,11 +9,13 @@ from two_factor.utils import default_device
 
 from common.exceptions import APIBaseError
 from myauth.models import UserPreference
-from myauth.services.otp import OTP_HASH_CACHE_KEY, OTP_ATTEMPT_CACHE_KEY, generate_cached_code, verify_cached_code
+from myauth.services.otp import OTP_ATTEMPT_CACHE_KEY, OTP_HASH_CACHE_KEY, generate_cached_code, verify_cached_code
 from myauth.services.password import validate_user_password
 from myauth.services.verification import (
-    PHONE_CHANGE_CACHE_KEY, PHONE_CHANGE_WINDOW,
-    PHONE_CHANGE_OLD_VERIFIED, PHONE_CHANGE_NEW_AWAITING,
+    PHONE_CHANGE_CACHE_KEY,
+    PHONE_CHANGE_NEW_AWAITING,
+    PHONE_CHANGE_OLD_VERIFIED,
+    PHONE_CHANGE_WINDOW,
 )
 
 User = get_user_model()

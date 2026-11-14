@@ -1,8 +1,6 @@
-from django.contrib.auth import get_user_model
-from ninja import Schema, ModelSchema
-
 from typing import Optional
 
+from ninja import Schema
 from pydantic import EmailStr
 
 

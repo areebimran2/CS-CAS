@@ -7,7 +7,7 @@ from datetime import date
 import pytest
 from django.db import IntegrityError
 
-from seasons_sailings.models import Season, Sailing
+from seasons_sailings.models import Sailing, Season
 from ships_cabins.models import Ship
 
 pytestmark = pytest.mark.django_db  # every test in this file uses the test database

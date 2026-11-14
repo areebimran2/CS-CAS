@@ -2,7 +2,7 @@ from ninja import Router
 from ninja_extra import paginate
 
 from common.access import requires
-from pricing.schemas import PricingGraphOut, PricingListOut, CabinOverrideIn
+from pricing.schemas import PricingGraphOut, PricingListOut
 
 router = Router(tags=['G1. Scope, View, Bulk, Margins & FX'])
 

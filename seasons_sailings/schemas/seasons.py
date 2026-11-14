@@ -3,11 +3,10 @@ from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
+from pydantic import Field
 
 from seasons_sailings.models import Season
-
-from pydantic import Field
 
 
 class SeasonOut(ModelSchema):

@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Literal, Dict
+from typing import Dict, Literal, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
 from catalogs.schemas.cancellation_policies import MoneyOut
 from selling.models import Booking

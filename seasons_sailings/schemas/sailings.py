@@ -2,11 +2,10 @@ import uuid
 from datetime import date
 from typing import List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
 from routes.models import Route
 from seasons_sailings.models import Sailing, Season
-
 from ships_cabins.models import Ship
 
 

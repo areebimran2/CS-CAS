@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
 from ships_cabins.models import Cabin
 

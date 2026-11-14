@@ -1,7 +1,7 @@
-from django.db import models
 from django.contrib.postgres.functions import RandomUUID
+from django.db import models
 
-from common.enums import HoldStatus, BookingStatus
+from common.enums import BookingStatus, HoldStatus
 from common.fields import PostgresEnumField
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg

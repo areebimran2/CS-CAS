@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional, Literal
+from typing import List, Literal, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 from pydantic import Field
 
 from discounts.models import Discount, DiscountTarget
+
 
 class DiscountKind(str, Enum):
     PERCENT = 'percent'

@@ -1,5 +1,6 @@
+from ninja.errors import AuthenticationError, HttpError, ValidationError
+
 from common.schemas import ErrorModel
-from ninja.errors import ValidationError, HttpError, AuthenticationError
 
 
 class APIBaseError(HttpError):

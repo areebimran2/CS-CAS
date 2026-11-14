@@ -2,16 +2,27 @@ from ninja import Router
 
 from common.access import authenticated
 from myauth.schemas import (
-    UserProfileSchema, UserProfileUpdateSchema, MessageOut,
-    SecuritySetupIn, VerifySchema,
-    ChangePhoneIn, ChangePasswordIn, ChangeEmailIn, ChangeTFAMethodIn,
     AuthPurpose,
+    ChangeEmailIn,
+    ChangePasswordIn,
+    ChangePhoneIn,
+    ChangeTFAMethodIn,
+    MessageOut,
+    SecuritySetupIn,
+    UserProfileSchema,
+    UserProfileUpdateSchema,
+    VerifySchema,
 )
 from myauth.services.profile import (
-    get_profile, update_user_profile,
-    send_secure_sms, verify_old_phone_number,
-    initiate_phone_change, complete_phone_change,
-    change_user_password, change_user_email, change_user_tfa_method,
+    change_user_email,
+    change_user_password,
+    change_user_tfa_method,
+    complete_phone_change,
+    get_profile,
+    initiate_phone_change,
+    send_secure_sms,
+    update_user_profile,
+    verify_old_phone_number,
 )
 
 router = Router(tags=['A2. My Profile'])

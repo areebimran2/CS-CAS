@@ -1,6 +1,6 @@
-from typing import Optional, List
+from typing import List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 
 from catalogs.models import ReserveSetting
 

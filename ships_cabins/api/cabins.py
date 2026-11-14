@@ -1,10 +1,9 @@
-from ninja import Router, Path, PatchDict
-
+from ninja import PatchDict, Path, Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
-from ships_cabins.schemas import CabinOut, CabinIn
+from ships_cabins.schemas import CabinIn, CabinOut
 
 router = Router(tags=['D3. Cabins'])
 

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
 
     # Third-party apps
+    'ninja',  # provides manage.py export_openapi_schema, and serves the API docs' assets locally
     'pgtrigger',
     'phonenumber_field',
     'ninja_jwt',
@@ -53,7 +54,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     'two_factor',
     'two_factor.plugins.phonenumber',
-    
+
     # Local apps
     'common',
     'myadmin',

@@ -31,6 +31,8 @@ pytest==9.2.0
     #   pytest-django
 pytest-django==4.14.0
     # via -r requirements-dev.in
+ruff==0.17.4
+    # via -r requirements-dev.in
 wheel==0.48.0
     # via pip-tools
 

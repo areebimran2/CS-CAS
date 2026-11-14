@@ -9,8 +9,8 @@ from django.db import IntegrityError
 
 from catalogs.models import CabinCategory, CustomCost
 from pricing.models import CabinCostCustom
-from seasons_sailings.models import Season, Sailing
-from ships_cabins.models import Ship, Cabin
+from seasons_sailings.models import Sailing, Season
+from ships_cabins.models import Cabin, Ship
 
 pytestmark = pytest.mark.django_db
 

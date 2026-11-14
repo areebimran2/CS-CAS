@@ -60,6 +60,10 @@ jobs:
       - name: Install dependencies from the lockfiles
         run: pip install -r requirements.txt -r requirements-dev.txt
 
+      # These steps match `make check`, so a commit that passes locally passes here.
+      - name: Lint
+        run: ruff check --output-format github .
+
       - name: Run Django system checks
         run: python manage.py check
 

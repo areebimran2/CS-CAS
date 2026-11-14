@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class PostgresEnumField(models.Field):
     """
     A custom Django model field to represent a Postgres ENUM type.

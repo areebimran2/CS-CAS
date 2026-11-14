@@ -1,14 +1,13 @@
-from enum import Enum
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+from enum import Enum
 from typing import List
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
+from pydantic import Field
 from pydantic_extra_types.currency_code import Currency
 
 from catalogs.models import ExchangeRatesManual, FXRatesCache
-
-from pydantic import Field
 
 
 class Status(str, Enum):

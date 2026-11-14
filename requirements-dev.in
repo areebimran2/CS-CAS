@@ -5,3 +5,6 @@ pip-tools
 # Testing
 pytest
 pytest-django
+
+# Linting (configured in ruff.toml)
+ruff

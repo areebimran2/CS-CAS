@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class TxNow(models.Func):
     """
     Represents the PostgreSQL NOW() function, which returns the current timestamp.

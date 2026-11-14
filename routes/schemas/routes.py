@@ -1,7 +1,7 @@
 import uuid
-from typing import Optional, List
+from typing import List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 from pydantic_extra_types.coordinate import Latitude, Longitude
 
 from routes.models import Route, RouteLeg

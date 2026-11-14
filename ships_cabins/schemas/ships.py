@@ -1,7 +1,7 @@
 import uuid
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from ninja import Schema, ModelSchema
+from ninja import ModelSchema, Schema
 from pydantic_extra_types.currency_code import Currency
 
 from catalogs.models import Amenity
