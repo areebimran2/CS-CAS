@@ -2922,6 +2922,37 @@
         "parameters": [
           {
             "in": "query",
+            "name": "archived",
+            "schema": {
+              "default": "false",
+              "enum": [
+                "false",
+                "true",
+                "all"
+              ],
+              "title": "Archived",
+              "type": "string"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
             "name": "limit",
             "schema": {
               "default": 100,
@@ -2955,7 +2986,7 @@
             }
           }
         },
-        "description": "Returns a list of active ships.\n\n**Permission:** `ships.view`",
+        "description": "Returns ships ordered by name. By default only current ships; `?archived=true` lists archived ones and\n`?archived=all` both. `?search=` matches the name or operator.\n\n**Permission:** `ships.view`",
         "tags": [
           "D1. Ships"
         ],
@@ -2981,7 +3012,7 @@
             }
           }
         },
-        "description": "Create a new ship with  its currencies, and optionally amenities.\n\n**Permission:** `ships.create`",
+        "description": "Creates a ship with its currencies (at least one) and amenities. `new_amenities` are names added to the amenity\nmaster list, matching existing ones regardless of case.\n\n**Permission:** `ships.create`",
         "tags": [
           "D1. Ships"
         ],
@@ -3011,6 +3042,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3029,7 +3061,7 @@
             }
           }
         },
-        "description": "Retrieve a single ship with all its currencies, amenities, photos, and summary count\n\n**Permission:** `ships.view`",
+        "description": "Returns a ship with its currencies, amenities, photos, number of current cabins and active cabin map version.\n\n**Permission:** `ships.view`",
         "tags": [
           "D1. Ships"
         ],
@@ -3040,13 +3072,14 @@
         ]
       },
       "put": {
-        "operationId": "ships_cabins_api_ships_update_ship",
-        "summary": "Update Ship",
+        "operationId": "ships_cabins_api_ships_replace_ship",
+        "summary": "Replace Ship",
         "parameters": [
           {
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3065,7 +3098,7 @@
             }
           }
         },
-        "description": "FUll replacement of a ship's metadata, currencies, and amenities. The client sends the complete desired state;\nomitted optional fields are set to `null` or made empty.\n\n**Permission:** `ships.edit`",
+        "description": "Replaces a ship's details, currencies and amenities. Send the complete ship: optional fields that are left out\nare cleared.\n\n**Permission:** `ships.edit`",
         "tags": [
           "D1. Ships"
         ],
@@ -3084,6 +3117,114 @@
             "BearerAuth": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "ships_cabins_api_ships_delete_ship",
+        "summary": "Delete Ship",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "description": "Deletes a ship that nothing refers to: no cabins, cabin maps, seasons, sailings or pricing. Otherwise responds\n409 `IN_USE`; archive the ship instead.\n\n**Permission:** `ships.delete`",
+        "tags": [
+          "D1. Ships"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/ships/{ship_id}/archive": {
+      "post": {
+        "operationId": "ships_cabins_api_ships_archive_ship",
+        "summary": "Archive Ship",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Archives a ship, which hides it from the default ship list. Its cabins and history are kept.\n\n**Permission:** `ships.edit`",
+        "tags": [
+          "D1. Ships"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/ships/{ship_id}/unarchive": {
+      "post": {
+        "operationId": "ships_cabins_api_ships_unarchive_ship",
+        "summary": "Unarchive Ship",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Restores an archived ship.\n\n**Permission:** `ships.edit`",
+        "tags": [
+          "D1. Ships"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/api/ships/{ship_id}/photos/upload-urls": {
@@ -3095,6 +3236,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3136,6 +3278,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3198,6 +3341,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3246,6 +3390,7 @@
             "in": "path",
             "name": "photo_id",
             "schema": {
+              "format": "uuid",
               "title": "Photo Id",
               "type": "string"
             },
@@ -3255,6 +3400,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3785,13 +3931,71 @@
         "summary": "List Cabins",
         "parameters": [
           {
-            "in": "path",
-            "name": "ship_id",
+            "in": "query",
+            "name": "archived",
             "schema": {
-              "title": "Ship Id",
+              "default": "false",
+              "enum": [
+                "false",
+                "true",
+                "all"
+              ],
+              "title": "Archived",
               "type": "string"
             },
-            "required": true
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "deck",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Deck"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "category_id",
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category Id"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            },
+            "required": false
           },
           {
             "in": "query",
@@ -3814,6 +4018,16 @@
               "type": "integer"
             },
             "required": false
+          },
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
           }
         ],
         "responses": {
@@ -3828,7 +4042,7 @@
             }
           }
         },
-        "description": "Returns a list of cabins that belong to the specified ship.\n\n**Permission:** `ships.view`",
+        "description": "Returns the ship's cabins in number order (3, 4, ..., 10). By default only current cabins; `?archived=true` lists\narchived ones and `?archived=all` both. Filter with `?deck=`, `?category_id=` (repeatable) and `?search=` (number\nor name).\n\n**Permission:** `ships.view`",
         "tags": [
           "D3. Cabins"
         ],
@@ -3846,6 +4060,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3864,7 +4079,7 @@
             }
           }
         },
-        "description": "Creates a new cabin.\n\n**Permission:** `ships.create`",
+        "description": "Creates a cabin. Its number must be unique on the ship, ignoring case.\n\n**Permission:** `ships.create`",
         "tags": [
           "D3. Cabins"
         ],
@@ -3885,6 +4100,102 @@
         ]
       }
     },
+    "/api/ships/{ship_id}/cabins/bulk": {
+      "post": {
+        "operationId": "ships_cabins_api_cabins_create_cabins",
+        "summary": "Create Cabins",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CabinOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "Creates up to 500 cabins at once, or none: if any row is invalid, nothing is saved and every problem is listed with\nits row, e.g. `cabins[3].number`.\n\n**Permission:** `ships.create`",
+        "tags": [
+          "D3. Cabins"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CabinBulkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/ships/{ship_id}/cabins/decks": {
+      "get": {
+        "operationId": "ships_cabins_api_cabins_list_decks",
+        "summary": "List Decks",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DeckOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "description": "Returns each deck that has current cabins, with how many, so clients can offer the decks already in use.\n\n**Permission:** `ships.view`",
+        "tags": [
+          "D3. Cabins"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/ships/{ship_id}/cabins/{cabin_id}": {
       "get": {
         "operationId": "ships_cabins_api_cabins_get_cabin",
@@ -3894,6 +4205,7 @@
             "in": "path",
             "name": "cabin_id",
             "schema": {
+              "format": "uuid",
               "title": "Cabin Id",
               "type": "string"
             },
@@ -3903,6 +4215,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3921,7 +4234,7 @@
             }
           }
         },
-        "description": "Returns a cabin by id.\n\n**Permission:** `ships.view`",
+        "description": "Returns a cabin.\n\n**Permission:** `ships.view`",
         "tags": [
           "D3. Cabins"
         ],
@@ -3939,6 +4252,7 @@
             "in": "path",
             "name": "cabin_id",
             "schema": {
+              "format": "uuid",
               "title": "Cabin Id",
               "type": "string"
             },
@@ -3948,6 +4262,7 @@
             "in": "path",
             "name": "ship_id",
             "schema": {
+              "format": "uuid",
               "title": "Ship Id",
               "type": "string"
             },
@@ -3966,7 +4281,7 @@
             }
           }
         },
-        "description": "Updates a cabin.\n\n**Permission:** `ships.edit`",
+        "description": "Updates a cabin. Only the fields sent are changed. A cabin can't move to another ship.\n\n**Permission:** `ships.edit`",
         "tags": [
           "D3. Cabins"
         ],
@@ -3980,6 +4295,144 @@
           },
           "required": true
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ships_cabins_api_cabins_delete_cabin",
+        "summary": "Delete Cabin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cabin_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Cabin Id",
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "description": "Deletes a cabin that nothing refers to (cabin maps, pricing, discounts, holds or bookings). Otherwise responds\n409 `IN_USE`; archive the cabin instead.\n\n**Permission:** `ships.delete`",
+        "tags": [
+          "D3. Cabins"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/ships/{ship_id}/cabins/{cabin_id}/archive": {
+      "post": {
+        "operationId": "ships_cabins_api_cabins_archive_cabin",
+        "summary": "Archive Cabin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cabin_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Cabin Id",
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CabinOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Archives a cabin, which hides it from the default cabin list. Its history is kept.\n\n**Permission:** `ships.edit`",
+        "tags": [
+          "D3. Cabins"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/ships/{ship_id}/cabins/{cabin_id}/unarchive": {
+      "post": {
+        "operationId": "ships_cabins_api_cabins_unarchive_cabin",
+        "summary": "Unarchive Cabin",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cabin_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Cabin Id",
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "ship_id",
+            "schema": {
+              "format": "uuid",
+              "title": "Ship Id",
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CabinOut"
+                }
+              }
+            }
+          }
+        },
+        "description": "Restores an archived cabin.\n\n**Permission:** `ships.edit`",
+        "tags": [
+          "D3. Cabins"
+        ],
         "security": [
           {
             "BearerAuth": []
@@ -8490,6 +8943,33 @@
         "title": "QuoteCancellationChargeIn",
         "type": "object"
       },
+      "ShipFilter": {
+        "properties": {
+          "archived": {
+            "default": "false",
+            "enum": [
+              "false",
+              "true",
+              "all"
+            ],
+            "title": "Archived",
+            "type": "string"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
+          }
+        },
+        "title": "ShipFilter",
+        "type": "object"
+      },
       "NinjaPaginationResponseSchema_ShipListOut_": {
         "properties": {
           "count": {
@@ -8512,6 +8992,7 @@
         "type": "object"
       },
       "ShipListOut": {
+        "description": "Read from services.ships.ships_with_summary(), which adds the counts in the same query.",
         "properties": {
           "id": {
             "anyOf": [
@@ -8539,6 +9020,10 @@
               }
             ],
             "title": "Operator"
+          },
+          "is_archived": {
+            "title": "Is Archived",
+            "type": "boolean"
           },
           "currencies": {
             "items": {
@@ -8744,12 +9229,73 @@
         },
         "required": [
           "name",
+          "is_archived",
           "currencies",
           "amenity_count",
           "cabin_count",
           "photo_count"
         ],
         "title": "ShipListOut",
+        "type": "object"
+      },
+      "Address": {
+        "description": "A postal address, used in requests and responses. Stored in the ship's `address` JSON column.",
+        "properties": {
+          "line1": {
+            "minLength": 1,
+            "title": "Line1",
+            "type": "string"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line2"
+          },
+          "city": {
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postal Code"
+          },
+          "country": {
+            "pattern": "^\\w{2}$",
+            "title": "Country",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line1",
+          "city",
+          "country"
+        ],
+        "title": "Address",
         "type": "object"
       },
       "AmenityOut2": {
@@ -8847,27 +9393,19 @@
             ],
             "title": "Contact Person"
           },
-          "address": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Address"
-          },
           "is_archived": {
             "title": "Is Archived",
             "type": "boolean"
           },
-          "amenities": {
-            "items": {
-              "$ref": "#/components/schemas/AmenityOut2"
-            },
-            "title": "Amenities",
-            "type": "array"
+          "address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "currencies": {
             "items": {
@@ -9047,6 +9585,13 @@
             "title": "Currencies",
             "type": "array"
           },
+          "amenities": {
+            "items": {
+              "$ref": "#/components/schemas/AmenityOut2"
+            },
+            "title": "Amenities",
+            "type": "array"
+          },
           "photos": {
             "items": {
               "$ref": "#/components/schemas/PhotoOut"
@@ -9058,8 +9603,8 @@
         "required": [
           "name",
           "is_archived",
-          "amenities",
           "currencies",
+          "amenities",
           "photos"
         ],
         "title": "ShipOut",
@@ -9068,6 +9613,7 @@
       "ShipIn": {
         "properties": {
           "name": {
+            "minLength": 1,
             "title": "Name",
             "type": "string"
           },
@@ -9096,14 +9642,12 @@
           "address": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/Address"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Address"
+            ]
           },
           "currencies": {
             "items": {
@@ -9280,39 +9824,28 @@
               "minLength": 3,
               "type": "string"
             },
+            "minItems": 1,
             "title": "Currencies",
             "type": "array"
           },
-          "amenities": {
-            "anyOf": [
-              {
-                "items": {
-                  "format": "uuid",
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+          "amenity_ids": {
             "default": [],
-            "title": "Amenities"
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Amenity Ids",
+            "type": "array"
           },
           "new_amenities": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
             "default": [],
-            "title": "New Amenities"
+            "description": "Names to add to the amenity master list",
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": "New Amenities",
+            "type": "array"
           }
         },
         "required": [
@@ -9323,7 +9856,18 @@
         "type": "object"
       },
       "ShipDetailOut": {
+        "description": "Read from services.ships.ships_with_summary(), which adds the counts.",
         "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "currencies": {
             "items": {
               "enum": [
@@ -9553,17 +10097,6 @@
               }
             ],
             "title": "Contact Person"
-          },
-          "address": {
-            "anyOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Address"
           },
           "is_archived": {
             "title": "Is Archived",
@@ -10046,26 +10579,16 @@
         "title": "CabinMapActivateOut",
         "type": "object"
       },
-      "CabinOut": {
+      "CabinFilter": {
         "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+          "archived": {
+            "default": "false",
+            "enum": [
+              "false",
+              "true",
+              "all"
             ],
-            "title": "Id"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "number": {
-            "title": "Number",
+            "title": "Archived",
             "type": "string"
           },
           "deck": {
@@ -10079,27 +10602,114 @@
             ],
             "title": "Deck"
           },
-          "is_archived": {
-            "title": "Is Archived",
-            "type": "boolean"
+          "category_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
           },
-          "ship": {
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
+          }
+        },
+        "title": "CabinFilter",
+        "type": "object"
+      },
+      "CabinCategoryRef": {
+        "properties": {
+          "id": {
             "format": "uuid",
-            "title": "Ship",
+            "title": "Id",
             "type": "string"
           },
-          "category": {
-            "format": "uuid",
-            "title": "Category",
+          "name": {
+            "title": "Name",
             "type": "string"
           }
         },
         "required": [
-          "name",
+          "id",
+          "name"
+        ],
+        "title": "CabinCategoryRef",
+        "type": "object"
+      },
+      "CabinOut": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "ship_id": {
+            "format": "uuid",
+            "title": "Ship Id",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "deck": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deck"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CabinCategoryRef"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "is_archived": {
+            "title": "Is Archived",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "ship_id",
           "number",
-          "is_archived",
-          "ship",
-          "category"
+          "name",
+          "deck",
+          "category",
+          "notes",
+          "is_archived"
         ],
         "title": "CabinOut",
         "type": "object"
@@ -10127,13 +10737,23 @@
       },
       "CabinIn": {
         "properties": {
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
           "number": {
+            "description": "Unique on the ship, ignoring case",
+            "minLength": 1,
             "title": "Number",
             "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Defaults to \"Cabin <number>\"",
+            "title": "Name"
           },
           "deck": {
             "anyOf": [
@@ -10146,22 +10766,80 @@
             ],
             "title": "Deck"
           },
-          "category": {
+          "category_id": {
             "format": "uuid",
-            "title": "Category",
+            "title": "Category Id",
             "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           }
         },
         "required": [
-          "name",
           "number",
-          "category"
+          "category_id"
         ],
         "title": "CabinIn",
         "type": "object"
       },
+      "CabinBulkIn": {
+        "properties": {
+          "cabins": {
+            "items": {
+              "$ref": "#/components/schemas/CabinIn"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Cabins",
+            "type": "array"
+          }
+        },
+        "required": [
+          "cabins"
+        ],
+        "title": "CabinBulkIn",
+        "type": "object"
+      },
+      "DeckOut": {
+        "properties": {
+          "deck": {
+            "title": "Deck",
+            "type": "string"
+          },
+          "cabin_count": {
+            "title": "Cabin Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deck",
+          "cabin_count"
+        ],
+        "title": "DeckOut",
+        "type": "object"
+      },
       "CabinInPatch": {
         "properties": {
+          "number": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
           "name": {
             "anyOf": [
               {
@@ -10173,17 +10851,6 @@
             ],
             "title": "Name"
           },
-          "number": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Number"
-          },
           "deck": {
             "anyOf": [
               {
@@ -10195,7 +10862,7 @@
             ],
             "title": "Deck"
           },
-          "category": {
+          "category_id": {
             "anyOf": [
               {
                 "format": "uuid",
@@ -10205,7 +10872,18 @@
                 "type": "null"
               }
             ],
-            "title": "Category"
+            "title": "Category Id"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           }
         },
         "title": "CabinInPatch",

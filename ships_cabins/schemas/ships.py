@@ -1,76 +1,112 @@
 import uuid
-from typing import Dict, List, Optional
+from typing import Annotated, Optional
 
 from ninja import ModelSchema, Schema
+from ninja.filter_schema import FilterLookup
+from pydantic import Field, field_validator
+from pydantic_extra_types.country import CountryAlpha2
 from pydantic_extra_types.currency_code import Currency
 
 from catalogs.models import Amenity
+from common.schemas import ArchivedFilter, NonEmptyStr, OptionalStr
 from ships_cabins.models import Ship, ShipPhoto
 
 
-class AddressIn(Schema):
-    line1: str
-    line2: str
-    city: str
-    region: str
-    postal_one: str
-    country_iso2: str
+class Address(Schema):
+    """A postal address, used in requests and responses. Stored in the ship's `address` JSON column."""
+    line1: NonEmptyStr
+    line2: OptionalStr = None
+    city: NonEmptyStr
+    region: OptionalStr = None
+    postal_code: OptionalStr = None
+    country: CountryAlpha2  # ISO 3166-1 alpha-2, e.g. HR
+
+
+# -- Requests
 
 class ShipIn(Schema):
-    name: str
-    operator: Optional[str] = None
-    contact_person: Optional[str] = None
-    address: Optional[Dict] = None
-    currencies: List[Currency]
-    amenities: Optional[List[uuid.UUID]] = []
-    new_amenities: Optional[List[str]] = []
+    name: NonEmptyStr
+    operator: OptionalStr = None
+    contact_person: OptionalStr = None
+    address: Optional[Address] = None
+    currencies: list[Currency] = Field(min_length=1)
+    amenity_ids: list[uuid.UUID] = []
+    new_amenities: list[NonEmptyStr] = Field(default=[], description='Names to add to the amenity master list')
+
+    @field_validator('currencies', 'amenity_ids', 'new_amenities')
+    @classmethod
+    def remove_duplicates(cls, values):
+        return list(dict.fromkeys(values))
+
+
+class ShipFilter(ArchivedFilter):
+    search: Annotated[Optional[str], FilterLookup(['name__icontains', 'operator__icontains'])] = None
+
+
+class PhotoIn(Schema):
+    id: uuid.UUID
+    sort_order: int
+
+
+class ReorderPhotoIn(Schema):
+    order: list[PhotoIn]
+
+
+class UploadFileIn(Schema):
+    filename: str
+    content_type: str
+
+
+class PhotoUploadUrlsIn(Schema):
+    files: list[UploadFileIn]
+
+
+# -- Responses
 
 class AmenityOut(ModelSchema):
     class Meta:
         model = Amenity
         fields = ['id', 'name']
 
+
 class PhotoOut(ModelSchema):
     class Meta:
         model = ShipPhoto
         fields = ['id', 'url', 'sort_order']
 
+
 class ListPhotoOut(Schema):
-    photos: List[PhotoOut]
+    photos: list[PhotoOut]
+
 
 class ShipOut(ModelSchema):
-    currencies: List[Currency]
-    amenities: List[AmenityOut]
-    photos: List[PhotoOut]
+    address: Optional[Address] = None
+    currencies: list[Currency]
+    amenities: list[AmenityOut]
+    photos: list[PhotoOut]
 
     class Meta:
         model = Ship
-        fields = '__all__'
-        exclude = ['created_at', 'updated_at']
+        fields = ['id', 'name', 'operator', 'contact_person', 'is_archived']
 
     @staticmethod
-    def resolve_currencies(obj):
-        return obj.shipcurrency_set.all().values_list('currency', flat=True)
+    def resolve_currencies(ship):
+        return [row.currency for row in ship.shipcurrency_set.all()]
 
     @staticmethod
-    def resolve_photos(obj):
-        return obj.shipphoto_set.all().order_by('sort_order', 'created_at')
+    def resolve_photos(ship):
+        return ship.shipphoto_set.order_by('sort_order', 'created_at')
+
 
 class ShipDetailOut(ShipOut):
+    """Read from services.ships.ships_with_summary(), which adds the counts."""
     cabin_count: int
     active_map_version: Optional[int] = None
 
-    @staticmethod
-    def resolve_cabin_count(obj):
-        return obj.cabin_set.filter(is_archived=False).count()
-
-    @staticmethod
-    def resolve_active_map_version(obj):
-        active_map = obj.cabinmap_set.filter(status='active').first()
-        return active_map.version if active_map else None
 
 class ShipListOut(ModelSchema):
-    currencies: List[Currency]
+    """Read from services.ships.ships_with_summary(), which adds the counts in the same query."""
+    currencies: list[Currency]
     amenity_count: int
     cabin_count: int
     photo_count: int
@@ -78,47 +114,17 @@ class ShipListOut(ModelSchema):
 
     class Meta:
         model = Ship
-        fields = ['id', 'name', 'operator']
+        fields = ['id', 'name', 'operator', 'is_archived']
 
     @staticmethod
-    def resolve_currencies(obj):
-        return obj.shipcurrency_set.all().values_list('currency', flat=True)
+    def resolve_currencies(ship):
+        return [row.currency for row in ship.shipcurrency_set.all()]  # prefetched, so no query per ship
 
-    @staticmethod
-    def resolve_amenity_count(obj):
-        return obj.amenities.filter(is_active=True).count()
-
-    @staticmethod
-    def resolve_cabin_count(obj):
-        return obj.cabin_set.filter(is_archived=False).count()
-
-    @staticmethod
-    def resolve_photo_count(obj):
-        return obj.shipphoto_set.count()
-
-    @staticmethod
-    def resolve_active_map_version(obj):
-        active_map = obj.cabinmap_set.filter(status='active').first()
-        return active_map.version if active_map else None
-
-class UploadFileIn(Schema):
-    filename: str
-    content_type: str
 
 class UploadFileOut(Schema):
     upload_url: str
     asset_url: str
 
-class PhotoUploadUrlsIn(Schema):
-    files: List[UploadFileIn]
 
 class PhotoUploadUrlsOut(Schema):
-    files: List[UploadFileOut]
-
-class PhotoIn(Schema):
-    id: uuid.UUID
-    sort_order: int
-
-class ReorderPhotoIn(Schema):
-    order: List[PhotoIn]
-
+    files: list[UploadFileOut]

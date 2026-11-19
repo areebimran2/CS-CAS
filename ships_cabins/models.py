@@ -6,10 +6,12 @@ from common.fields import PostgresEnumField
 from common.functions import TxNow
 from common.triggers import set_updated_at_trg
 
+CASE_INSENSITIVE_NATURAL = 'case_insensitive_natural'
+
 
 class Ship(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
-    name = models.TextField(null=False)
+    name = models.TextField(null=False, db_collation=CASE_INSENSITIVE_NATURAL)
     operator = models.TextField(null=True)
     contact_person = models.TextField(null=True)
     address = models.JSONField(null=True)
@@ -21,6 +23,7 @@ class Ship(models.Model):
 
     class Meta:
         db_table = 'ships'
+        ordering = ['name']
         constraints = [
             models.UniqueConstraint(
                 fields=['name'],
@@ -67,8 +70,9 @@ class ShipPhoto(models.Model):
 class Cabin(models.Model):
     id = models.UUIDField(primary_key=True, db_default=RandomUUID())
     name = models.TextField(null=False)
-    number = models.TextField(null=False)
+    number = models.TextField(null=False, db_collation=CASE_INSENSITIVE_NATURAL)
     deck = models.TextField(null=True)
+    notes = models.TextField(null=True)
     is_archived = models.BooleanField(db_default=False, null=False)
     created_at = models.DateTimeField(db_default=TxNow(), null=False)
     updated_at = models.DateTimeField(db_default=TxNow(), null=False)
@@ -78,6 +82,7 @@ class Cabin(models.Model):
 
     class Meta:
         db_table = 'cabins'
+        ordering = ['number']
         constraints = [
             models.UniqueConstraint(
                 fields=['ship', 'number'],
@@ -110,6 +115,12 @@ class CabinMap(models.Model):
                 fields=['ship', 'version'],
                 name='cabin_maps_ship_id_version_key'
             ),
+            # -- Exactly one active map per ship
+            models.UniqueConstraint(
+                fields=['ship'],
+                condition=models.Q(status=MapStatus.ACTIVE),
+                name='uidx_cabin_maps_active',
+            ),
         ]
         triggers = [
             set_updated_at_trg('trg_cabin_maps_updated'),
@@ -124,6 +135,13 @@ class CabinMapZone(models.Model):
 
     class Meta:
         db_table = 'cabin_zones'
+        constraints = [
+            # -- A cabin appears once per map
+            models.UniqueConstraint(
+                fields=['map', 'cabin'],
+                name='cabin_zones_map_id_cabin_id_key',
+            ),
+        ]
         indexes = [
             models.Index(fields=['map'], name='idx_cabin_zones_map')
         ]

@@ -1,7 +1,8 @@
+import uuid
 from typing import List
 
 from django.shortcuts import get_object_or_404
-from ninja import File, Router, Status
+from ninja import File, Query, Router, Status
 from ninja.files import UploadedFile
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
@@ -13,6 +14,7 @@ from ships_cabins.schemas import (
     PhotoUploadUrlsIn,
     ReorderPhotoIn,
     ShipDetailOut,
+    ShipFilter,
     ShipIn,
     ShipListOut,
     ShipOut,
@@ -25,45 +27,77 @@ router = Router(tags=['D1. Ships'])
 @router.get('', response=NinjaPaginationResponseSchema[ShipListOut])
 @requires('ships.view')
 @paginate()
-def list_ships(request):
+def list_ships(request, filters: Query[ShipFilter]):
     """
-    Returns a list of active ships.
+    Returns ships ordered by name. By default only current ships; `?archived=true` lists archived ones and
+    `?archived=all` both. `?search=` matches the name or operator.
     """
-    return Ship.objects.all()
+    return filters.filter(service.ships_with_summary())
 
 
 @router.post('', response=ShipOut)
 @requires('ships.create')
 def create_ship(request, payload: ShipIn):
     """
-    Create a new ship with  its currencies, and optionally amenities.
+    Creates a ship with its currencies (at least one) and amenities. `new_amenities` are names added to the amenity
+    master list, matching existing ones regardless of case.
     """
-    return service.create_ship(**payload.dict(exclude_unset=True))
+    return service.create_ship(**payload.dict())
 
 
 @router.get('/{ship_id}', response=ShipDetailOut)
 @requires('ships.view')
-def get_ship(request, ship_id):
+def get_ship(request, ship_id: uuid.UUID):
     """
-    Retrieve a single ship with all its currencies, amenities, photos, and summary count
+    Returns a ship with its currencies, amenities, photos, number of current cabins and active cabin map version.
     """
-    ship = get_object_or_404(Ship, id=ship_id)
-    return ship
+    return get_object_or_404(service.ships_with_summary(), id=ship_id)
 
 
 @router.put('/{ship_id}', response=ShipOut)
 @requires('ships.edit')
-def update_ship(request, payload: ShipIn, ship_id):
+def replace_ship(request, payload: ShipIn, ship_id: uuid.UUID):
     """
-    FUll replacement of a ship's metadata, currencies, and amenities. The client sends the complete desired state;
-    omitted optional fields are set to `null` or made empty.
+    Replaces a ship's details, currencies and amenities. Send the complete ship: optional fields that are left out
+    are cleared.
     """
-    return service.replace_ship(get_object_or_404(Ship, id=ship_id), **payload.dict(exclude_unset=True))
+    return service.replace_ship(get_object_or_404(Ship, id=ship_id), **payload.dict())
 
+
+@router.post('/{ship_id}/archive', response=ShipOut)
+@requires('ships.edit')
+def archive_ship(request, ship_id: uuid.UUID):
+    """
+    Archives a ship, which hides it from the default ship list. Its cabins and history are kept.
+    """
+    return service.set_ship_archived(get_object_or_404(Ship, id=ship_id), True)
+
+
+@router.post('/{ship_id}/unarchive', response=ShipOut)
+@requires('ships.edit')
+def unarchive_ship(request, ship_id: uuid.UUID):
+    """
+    Restores an archived ship.
+    """
+    return service.set_ship_archived(get_object_or_404(Ship, id=ship_id), False)
+
+
+@router.delete('/{ship_id}', response={204: None})
+@requires('ships.delete')
+def delete_ship(request, ship_id: uuid.UUID):
+    """
+    Deletes a ship that nothing refers to: no cabins, cabin maps, seasons, sailings or pricing. Otherwise responds
+    409 `IN_USE`; archive the ship instead.
+    """
+    service.delete_ship(get_object_or_404(Ship, id=ship_id))
+    return Status(204, None)
+
+
+# -- Photo gallery
 
 @router.post('/{ship_id}/photos/upload-urls')
 @requires('ships.edit')
-def upload_ship_photo_urls(request, ship_id, payload: PhotoUploadUrlsIn):
+def upload_ship_photo_urls(request, ship_id: uuid.UUID, payload: PhotoUploadUrlsIn):
     """
     Generate presigned URLs for the client to upload photos directly to object storage.
     """
@@ -71,7 +105,7 @@ def upload_ship_photo_urls(request, ship_id, payload: PhotoUploadUrlsIn):
 
 @router.post('/{ship_id}/photos', response=ListPhotoOut)
 @requires('ships.edit')
-def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id):
+def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id: uuid.UUID):
     """
     Upload a photo to the ship gallery.
     """
@@ -80,7 +114,7 @@ def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id):
 
 @router.post('/{ship_id}/photos/reorder', response=ListPhotoOut)
 @requires('ships.edit')
-def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id):
+def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id: uuid.UUID):
     """
     Update the sort order of the ships' gallery.
     """
@@ -90,7 +124,7 @@ def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id):
 
 @router.delete('/{ship_id}/photos/{photo_id}', response={204: None})
 @requires('ships.edit')
-def delete_ship_photo(request, photo_id, ship_id):
+def delete_ship_photo(request, photo_id: uuid.UUID, ship_id: uuid.UUID):
     """
     Remove a specific photo from the ship gallery.
     """

@@ -31,7 +31,8 @@ PERMISSIONS = {
     # D. Ships, cabins and cabin maps
     'ships.view': 'View ships, cabins and cabin maps',
     'ships.create': 'Create ships, cabins and cabin maps',
-    'ships.edit': 'Edit ships, cabins, cabin maps and ship photos',
+    'ships.edit': 'Edit and archive ships, cabins, cabin maps and ship photos',
+    'ships.delete': 'Delete ships and cabins that nothing refers to',
 
     # E. Routes
     'routes.view': 'View routes',
