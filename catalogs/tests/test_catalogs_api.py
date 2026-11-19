@@ -7,13 +7,13 @@ from django.db import IntegrityError
 
 from catalogs.models import CancellationPolicy, ExchangeRatesManual
 
-POLICIES_URL = '/api/policies/cancellation-policies/'
+POLICIES_URL = '/api/policies/cancellation-policies'
 
 
 @pytest.mark.parametrize('url, payload, change', [
-    ('/api/catalog/amenities/', {'name': 'Spa', 'is_active': True}, {'name': 'Thermal spa'}),
-    ('/api/catalog/cabin-categories/', {'name': 'Studio', 'is_active': True}, {'sort_order': 5}),
-    ('/api/catalog/custom-costs/',
+    ('/api/catalog/amenities', {'name': 'Spa', 'is_active': True}, {'name': 'Thermal spa'}),
+    ('/api/catalog/cabin-categories', {'name': 'Studio', 'is_active': True}, {'sort_order': 5}),
+    ('/api/catalog/custom-costs',
      {'key': 'port_fees', 'label': 'Port fees', 'mode': 'fixed', 'applies_to': 'per_cabin', 'is_active': True},
      {'label': 'Port charges'}),
 ])
@@ -21,7 +21,7 @@ def test_create_then_partially_update(superuser_client, url, payload, change):
     created = superuser_client.post(url, payload)
     assert created.status_code == 200
 
-    updated = superuser_client.put(f"{url}{created.json()['id']}", change)
+    updated = superuser_client.put(f"{url}/{created.json()['id']}", change)
 
     assert updated.status_code == 200
     assert updated.json() == {**created.json(), **change}
@@ -36,7 +36,7 @@ def test_manual_rates_upsert_updates_existing_pairs(superuser_client):
 
 
 def test_reserve_settings_update_changes_only_the_fields_sent(superuser_client):
-    response = superuser_client.put('/api/policies/reserve-settings/',
+    response = superuser_client.put('/api/policies/reserve-settings',
                                     {'max_hold_minutes': 720, 'reminder_schedule_minutes': [60]})
 
     assert response.status_code == 200
@@ -53,7 +53,7 @@ def test_cancellation_policy_replace_swaps_all_tiers(superuser_client):
     created = superuser_client.post(POLICIES_URL, {'name': 'Standard',
                                                    'tiers': [tier(0, 30, '1'), tier(31, 365, '0.5')]})
 
-    replaced = superuser_client.put(f"{POLICIES_URL}{created.json()['id']}",
+    replaced = superuser_client.put(f"{POLICIES_URL}/{created.json()['id']}",
                                     {'name': 'Strict', 'tiers': [tier(0, 365, '1')]})
 
     assert replaced.status_code == 200
@@ -67,7 +67,7 @@ def test_cancellation_policy_replace_is_all_or_nothing(superuser_client):
     policy = CancellationPolicy.objects.get(id=created.json()['id'])
 
     with pytest.raises(IntegrityError):
-        superuser_client.put(f'{POLICIES_URL}{policy.id}', {'name': 'Broken', 'tiers': [tier(40, 10, '1')]})
+        superuser_client.put(f'{POLICIES_URL}/{policy.id}', {'name': 'Broken', 'tiers': [tier(40, 10, '1')]})
 
     policy.refresh_from_db()
     assert policy.name == 'Standard'

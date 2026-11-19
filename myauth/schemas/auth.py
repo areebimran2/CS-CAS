@@ -38,8 +38,3 @@ class ResetPasswordIn(Schema):
     token: str
     password: str
 
-
-# Miscellaneous schemas
-class MessageOut(Schema):
-    message: str
-

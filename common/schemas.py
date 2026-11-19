@@ -1,8 +1,10 @@
+from decimal import Decimal
 from typing import Annotated, Any, Dict, List, Literal, Optional
 
 from django.db.models import Q
 from ninja import FilterSchema, Schema
-from pydantic import BeforeValidator, StringConstraints
+from pydantic import BeforeValidator, Field, StringConstraints
+from pydantic_extra_types.currency_code import Currency
 
 
 class ErrorModel(Schema):
@@ -26,6 +28,21 @@ def _blank_to_none(value):
 
 OptionalStr = Annotated[Optional[str], BeforeValidator(_blank_to_none)]
 """Optional text with surrounding spaces removed. Blank text becomes null."""
+
+
+class Money(Schema):
+    """An amount in one currency. Amounts are calculated to 4 decimal places and shown to 2."""
+    amount: Decimal = Field(max_digits=14, decimal_places=4)
+    currency: Currency
+
+
+class MessageOut(Schema):
+    message: str
+
+
+class ReasonIn(Schema):
+    """An optional free-text reason, recorded with actions such as suspending a user or requesting a release."""
+    reason: Optional[str] = None
 
 
 # -- List filters

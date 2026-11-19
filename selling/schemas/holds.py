@@ -1,65 +1,62 @@
 import uuid
-from enum import Enum
+from datetime import datetime
 from typing import Optional
 
-from ninja import ModelSchema, Schema
+from ninja import FilterSchema, Schema
+from pydantic import Field
 
-from selling.models import Hold, ReleaseRequest
-
-
-class HoldStatus(str, Enum):
-    ACTIVE = 'active'
-    RELEASED = 'released'
-    EXPIRED = 'expired'
-    CONVERTED = 'converted'
+from common.enums import HoldStatus, ReleaseDecision
+from common.schemas import NonEmptyStr, OptionalStr
 
 
-class HoldOut(ModelSchema):
-    status: HoldStatus
-
-    class Meta:
-        model = Hold
-        fields = '__all__'
-        exclude = ['created_at', 'updated_at', 'idempotency_key', 'status']
+# -- Requests
 
 class HoldIn(Schema):
-    sailing: uuid.UUID
-    cabin: uuid.UUID
+    sailing_id: uuid.UUID
+    cabin_id: uuid.UUID
+    uc_ref: NonEmptyStr
+    notes: OptionalStr = None
+    expires_at: Optional[datetime] = Field(
+        default=None,
+        description='Replaces the expiry the reserve policy gives. Needs `selling.override_hold_expiry`',
+    )
+
+
+class HoldFilter(FilterSchema):
+    sailing_id: Optional[uuid.UUID] = None
+    cabin_id: Optional[uuid.UUID] = None
+    user_id: Optional[uuid.UUID] = None
+    status: Optional[HoldStatus] = None
+    uc_ref: Optional[str] = None
+
+
+class ReleaseRequestFilter(FilterSchema):
+    hold_id: Optional[uuid.UUID] = None
+    requested_by_id: Optional[uuid.UUID] = None
+
+
+# -- Responses
+
+class HoldOut(Schema):
+    id: uuid.UUID
+    sailing_id: uuid.UUID
+    cabin_id: uuid.UUID
+    user_id: uuid.UUID
     uc_ref: str
-    notes: Optional[str] = None
-
-class HoldExtensionOut(ModelSchema):
     status: HoldStatus
-
-    class Meta:
-        model = Hold
-        fields = ['id', 'expires_at']
-
-class ReasonIn(Schema):
-    reason: Optional[str] = None
-
-class HoldReleaseOut(Schema):
-    status: HoldStatus
-
-    class Meta:
-        model = Hold
-        fields = ['id']
+    expires_at: datetime
+    created_at: datetime
 
 
-class RequestStatus(str, Enum):
-    APPROVED = 'approved'
-    DENIED = 'denied'
+class ReleaseRequestOut(Schema):
+    id: uuid.UUID
+    hold_id: uuid.UUID
+    requested_by_id: uuid.UUID
+    reason: Optional[str]
+    created_at: datetime
 
 
-class ReleaseRequestOut(ModelSchema):
-    class Meta:
-        model = ReleaseRequest
-        fields = '__all__'
-
-class ReleaseRequestResult(ModelSchema):
-    result: RequestStatus
-
-    class Meta:
-        model = ReleaseRequest
-        fields = ['id']
-
+class ReleaseRequestResultOut(Schema):
+    id: uuid.UUID
+    result: ReleaseDecision
+    hold: HoldOut = Field(description='The hold after the decision: released when approved, unchanged when denied')

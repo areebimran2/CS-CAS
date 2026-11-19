@@ -18,7 +18,7 @@ router = Router(tags=['B2. Roles'])
 @paginate()
 def list_roles(request):
     """
-    Returns a list of roles, and their assigned permissions.
+    Returns the roles and the permissions each grants.
     """
     return Role.objects.all()
 
@@ -27,24 +27,32 @@ def list_roles(request):
 @requires('roles.create')
 def create_role(request, payload: RoleIn):
     """
-    Create a new role along with its associated permissions.
+    Creates a role with the permissions it grants.
     """
     return service.create_role(**payload.dict())
+
+
+@router.get('/{role_id}', response=RoleOut)
+@requires('roles.view')
+def get_role(request, role_id: uuid.UUID):
+    """
+    Returns a role.
+    """
+    return get_object_or_404(Role, id=role_id)
 
 
 @router.put('/{role_id}', response=RoleOut)
 @requires('roles.edit')
 def update_role(request, payload: PatchDict[RoleIn], role_id: uuid.UUID):
     """
-    Update an existing role's details, including its associated permissions.
+    Updates a role. Only the fields sent are changed; a `permissions` list replaces all of the role's permissions.
     """
     return service.update_role(get_object_or_404(Role, id=role_id), payload)
 
-@router.get('/{role_id}', response=RoleOut)
-@requires('roles.view')
-def get_role(request, role_id: uuid.UUID):
+
+@router.delete('/{role_id}', response={204: None})
+@requires('roles.delete')
+def delete_role(request, role_id: uuid.UUID):
     """
-    Retrieve a specific role by its ID.
+    Deletes a role that no user has. Otherwise responds 409 `IN_USE`.
     """
-    role = get_object_or_404(Role, id=role_id)
-    return role

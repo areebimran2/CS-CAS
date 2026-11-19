@@ -1,35 +1,24 @@
 from datetime import date
 from decimal import Decimal
-from enum import Enum
 from typing import List
 
 from ninja import ModelSchema, Schema
 from pydantic import Field
-from pydantic_extra_types.currency_code import Currency
 
 from catalogs.models import CancellationPolicy, CancellationPolicyTier
-
-
-class ChargeType(str, Enum):
-    PERCENT_TOTAL = 'percent_total'
-    PERCENT_COS = 'percent_cos'
-    FIXED_AMOUNT = 'fixed_amount'
-
-
-class MoneyOut(Schema):
-    amount: Decimal = Field(decimal_places=2)
-    currency: Currency
+from common.enums import CancellationChargeType
+from common.schemas import Money
 
 
 class CancellationPolicyTierIn(Schema):
     min_days: int
     max_days: int
-    charge_type: ChargeType
-    value: Decimal = Field(max_digits=10, decimal_places=4)
+    charge_type: CancellationChargeType
+    value: Decimal = Field(max_digits=10, decimal_places=4, description='Percent charge types use 0..1')
 
 
 class CancellationPolicyTierOut(ModelSchema):
-    charge_type: ChargeType
+    charge_type: CancellationChargeType
 
     class Meta:
         model = CancellationPolicyTier
@@ -59,12 +48,11 @@ class CancellationPolicyOut(ModelSchema):
 class QuoteCancellationChargeIn(Schema):
     departure_date: date
     today: date
-    total: MoneyOut
-    cos: MoneyOut
+    total: Money
+    cos: Money
 
 
 class QuoteCancellationChargeOut(Schema):
     days_out: int
     tier: CancellationPolicyTierOut
-    charge: MoneyOut
-
+    charge: Money

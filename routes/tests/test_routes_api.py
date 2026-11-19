@@ -3,7 +3,7 @@ Tests for the route endpoints (spec module E1).
 """
 import pytest
 
-ROUTES_URL = '/api/routes/'
+ROUTES_URL = '/api/routes'
 
 
 def leg(seq, place_id):
@@ -26,7 +26,7 @@ def test_create_route_with_legs(route):
 
 
 def test_update_without_legs_keeps_them(superuser_client, route):
-    response = superuser_client.put(f"{ROUTES_URL}{route['id']}", {'name': 'Dalmatian islands'})
+    response = superuser_client.put(f"{ROUTES_URL}/{route['id']}", {'name': 'Dalmatian islands'})
 
     assert response.status_code == 200
     assert response.json()['name'] == 'Dalmatian islands'
@@ -34,6 +34,6 @@ def test_update_without_legs_keeps_them(superuser_client, route):
 
 
 def test_update_with_legs_replaces_them(superuser_client, route):
-    response = superuser_client.put(f"{ROUTES_URL}{route['id']}", {'legs': [leg(1, 'dubrovnik')]})
+    response = superuser_client.put(f"{ROUTES_URL}/{route['id']}", {'legs': [leg(1, 'dubrovnik')]})
 
     assert place_ids(response.json()) == ['dubrovnik']

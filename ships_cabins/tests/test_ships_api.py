@@ -11,7 +11,7 @@ from catalogs.models import Amenity, CabinCategory
 from ships_cabins.models import Cabin, Ship, ShipPhoto
 from ships_cabins.services import ships as ship_service
 
-SHIPS_URL = '/api/ships/'
+SHIPS_URL = '/api/ships'
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ def test_new_amenity_reuses_an_existing_one_regardless_of_case(superuser_client,
 def test_replace_clears_fields_that_are_left_out(superuser_client, db):
     created = superuser_client.post(SHIPS_URL, ship_payload(operator='Katarina Line', currencies=['EUR', 'GBP'])).json()
 
-    response = superuser_client.put(f"{SHIPS_URL}{created['id']}", ship_payload(currencies=['USD']))
+    response = superuser_client.put(f"{SHIPS_URL}/{created['id']}", ship_payload(currencies=['USD']))
 
     assert response.status_code == 200
     assert response.json()['operator'] is None
@@ -91,7 +91,7 @@ def test_replace_keeps_an_amenity_deactivated_since_it_was_added(superuser_clien
     ship.amenities.add(spa)
     Amenity.objects.filter(id=spa.id).update(is_active=False)
 
-    response = superuser_client.put(f'{SHIPS_URL}{ship.id}', ship_payload(amenity_ids=[str(spa.id)]))
+    response = superuser_client.put(f'{SHIPS_URL}/{ship.id}', ship_payload(amenity_ids=[str(spa.id)]))
 
     assert response.status_code == 200
     assert [a['name'] for a in response.json()['amenities']] == ['Spa']
@@ -133,18 +133,18 @@ def test_detail_counts_current_cabins(superuser_client, ship):
     Cabin.objects.create(ship=ship, number='1', name='Cabin 1', category=category)
     Cabin.objects.create(ship=ship, number='2', name='Cabin 2', category=category, is_archived=True)
 
-    assert superuser_client.get(f'{SHIPS_URL}{ship.id}').json()['cabin_count'] == 1
+    assert superuser_client.get(f'{SHIPS_URL}/{ship.id}').json()['cabin_count'] == 1
 
 
 def test_invalid_ship_id_is_422(superuser_client, db):
-    assert superuser_client.get(f'{SHIPS_URL}not-a-uuid').status_code == 422
+    assert superuser_client.get(f'{SHIPS_URL}/not-a-uuid').status_code == 422
 
 
 # -- Archive and delete
 
 def test_archive_and_unarchive(superuser_client, ship):
-    assert superuser_client.post(f'{SHIPS_URL}{ship.id}/archive').json()['is_archived'] is True
-    assert superuser_client.post(f'{SHIPS_URL}{ship.id}/unarchive').json()['is_archived'] is False
+    assert superuser_client.post(f'{SHIPS_URL}/{ship.id}/archive').json()['is_archived'] is True
+    assert superuser_client.post(f'{SHIPS_URL}/{ship.id}/unarchive').json()['is_archived'] is False
 
 
 def test_delete_unused_ship_removes_what_it_owns(superuser_client, ship, monkeypatch,
@@ -155,7 +155,7 @@ def test_delete_unused_ship_removes_what_it_owns(superuser_client, ship, monkeyp
     ShipPhoto.objects.create(ship=ship, url='https://storage.test/a.png')
 
     with django_capture_on_commit_callbacks(execute=True):
-        response = superuser_client.delete(f'{SHIPS_URL}{ship.id}')
+        response = superuser_client.delete(f'{SHIPS_URL}/{ship.id}')
 
     assert response.status_code == 204
     assert not Ship.objects.exists()
@@ -165,7 +165,7 @@ def test_delete_unused_ship_removes_what_it_owns(superuser_client, ship, monkeyp
 def test_delete_ship_with_cabins_is_refused(superuser_client, ship):
     Cabin.objects.create(ship=ship, number='1', name='Cabin 1', category=CabinCategory.objects.get(name='Suite'))
 
-    response = superuser_client.delete(f'{SHIPS_URL}{ship.id}')
+    response = superuser_client.delete(f'{SHIPS_URL}/{ship.id}')
 
     assert response.status_code == 409
     assert response.json()['type'] == 'IN_USE'
@@ -177,7 +177,7 @@ def test_deleting_needs_its_own_permission(make_user, ship):
     from common.testing import ApiClient
     editor = make_user(permissions=['ships.edit'])
 
-    assert ApiClient(editor).delete(f'{SHIPS_URL}{ship.id}').status_code == 403
+    assert ApiClient(editor).delete(f'{SHIPS_URL}/{ship.id}').status_code == 403
 
 
 # -- Photos
@@ -186,7 +186,7 @@ def test_upload_photos_stores_each_file(superuser_client, ship, monkeypatch):
     monkeypatch.setattr(ship_service, 'upload_file', lambda file, folder: f'https://storage.test/{folder}/{file.name}')
     files = [SimpleUploadedFile(name, b'image', content_type='image/png') for name in ('a.png', 'b.png')]
 
-    response = superuser_client.post(f'{SHIPS_URL}{ship.id}/photos', {'files': files}, content_type=MULTIPART_CONTENT)
+    response = superuser_client.post(f'{SHIPS_URL}/{ship.id}/photos', {'files': files}, content_type=MULTIPART_CONTENT)
 
     assert response.status_code == 200
     assert [p['url'] for p in response.json()['photos']] == [
@@ -196,7 +196,7 @@ def test_upload_photos_stores_each_file(superuser_client, ship, monkeypatch):
 def test_reorder_photos_returns_them_in_the_new_order(superuser_client, ship):
     first, second = (ShipPhoto.objects.create(ship=ship, url=u, sort_order=i) for i, u in enumerate(['/1', '/2']))
 
-    response = superuser_client.post(f'{SHIPS_URL}{ship.id}/photos/reorder',
+    response = superuser_client.post(f'{SHIPS_URL}/{ship.id}/photos/reorder',
                                      {'order': [{'id': str(first.id), 'sort_order': 5}]})
 
     assert response.status_code == 200
@@ -210,7 +210,7 @@ def test_delete_photo_removes_the_file_after_the_transaction_commits(superuser_c
     photo = ShipPhoto.objects.create(ship=ship, url='https://storage.test/x.png')
 
     with django_capture_on_commit_callbacks(execute=True):
-        response = superuser_client.delete(f'{SHIPS_URL}{ship.id}/photos/{photo.id}')
+        response = superuser_client.delete(f'{SHIPS_URL}/{ship.id}/photos/{photo.id}')
 
     assert response.status_code == 204
     assert not ShipPhoto.objects.filter(id=photo.id).exists()

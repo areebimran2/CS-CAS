@@ -10,8 +10,8 @@ from common.testing import ApiClient
 from cs_cas.api import api
 from myadmin.models import Permission
 
-SHIPS_URL = '/api/ships/'  # GET requires ships.view
-PROFILE_URL = '/api/me/'   # any signed-in user
+SHIPS_URL = '/api/ships'  # GET requires ships.view
+PROFILE_URL = '/api/me'    # any signed-in user
 
 
 def test_every_endpoint_declares_who_may_use_it():
@@ -35,7 +35,7 @@ def test_migrate_copies_the_catalogue_into_the_permissions_table():
     assert set(Permission.objects.values_list('key', flat=True)) >= PERMISSIONS.keys()
 
 
-# -- Enforcement, using GET /api/ships/ (requires ships.view)
+# -- Enforcement, using GET /api/ships (requires ships.view)
 
 @pytest.mark.django_db
 def test_no_token_is_401():

@@ -1,28 +1,43 @@
-from ninja import Router
+import uuid
+
+from ninja import Query, Router
+from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
-from selling.schemas import ReleaseRequestOut, ReleaseRequestResult
+from selling.schemas import ReleaseRequestFilter, ReleaseRequestOut, ReleaseRequestResultOut
 
-router = Router(tags=['I5. Release Request (against a Hold)'])
+router = Router(tags=['I5. Release Requests'])
+
 
 @router.get('', response=NinjaPaginationResponseSchema[ReleaseRequestOut])
 @requires('selling.view')
-def list_requests(request):
+@paginate()
+def list_release_requests(request, filters: Query[ReleaseRequestFilter]):
     """
-    Returns a list of release requests.
-    """
-
-@router.post('/{request_id}/approve', response=ReleaseRequestResult)
-@requires('selling.reserve')
-def approve_request(request, request_id):
-    """
-    Approves a request and releases the hold transactionally.
+    Returns release requests, newest first. Create one with `POST /api/holds/{hold_id}/release-request`.
     """
 
-@router.get('/{request_id}/deny', response=ReleaseRequestResult)
-@requires('selling.reserve')
-def deny_request(request, request_id):
+
+@router.get('/{request_id}', response=ReleaseRequestOut)
+@requires('selling.view')
+def get_release_request(request, request_id: uuid.UUID):
     """
-    Denies a release request.
+    Returns a release request.
+    """
+
+
+@router.post('/{request_id}/approve', response=ReleaseRequestResultOut)
+@requires('selling.reserve')
+def approve_release_request(request, request_id: uuid.UUID):
+    """
+    Approves a release request: the hold is released in the same transaction and the requester is notified.
+    """
+
+
+@router.post('/{request_id}/deny', response=ReleaseRequestResultOut)
+@requires('selling.reserve')
+def deny_release_request(request, request_id: uuid.UUID):
+    """
+    Denies a release request. The hold stays and the requester is notified.
     """

@@ -4,21 +4,23 @@ from common.access import requires
 from routes.schemas import PlaceDetailsOut, PlacesPredictionsOut
 from routes.services.places import places_details_out, places_predictions_out
 
-router = Router(tags=['E2. Place'])
+router = Router(tags=['E2. Places'])
+
 
 @router.get('/autocomplete', response=PlacesPredictionsOut)
 @requires('routes.edit')
 async def get_places_autocomplete(request, query: str):
     """
-    Returns a "Port (Place Search)" or suggestion list by using a proxy to Google Places autocomplete.
+    Suggests ports matching `query`, using Google Places autocomplete.
     """
     return await places_predictions_out(query)
 
+
 @router.get('/{place_id}', response=PlaceDetailsOut)
 @requires('routes.edit')
-async def get_places_details(request, place_id):
+async def get_place_details(request, place_id: str):
     """
-    Given a place id from the autocomplete suggestion, returns minimal details required for
-    route leg (place_id, lat, lng, etc.).
+    Returns what a route leg needs for a place chosen from the suggestions: its Place ID, latitude, longitude and
+    time zone.
     """
     return await places_details_out(place_id)

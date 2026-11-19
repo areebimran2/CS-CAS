@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
 from typing import List
 
 from ninja import ModelSchema, Schema
@@ -8,18 +7,13 @@ from pydantic import Field
 from pydantic_extra_types.currency_code import Currency
 
 from catalogs.models import ExchangeRatesManual, FXRatesCache
-
-
-class Status(str, Enum):
-    OK = 'ok'
-    DEGRADED = 'degraded'
-    DOWN = 'down'
+from common.enums import FXProviderStatus
 
 
 class ManualFXIn(Schema):
     base: Currency
     quote: Currency
-    rate: Decimal = Field(max_digits=18, decimal_places=8)
+    rate: Decimal = Field(gt=0, max_digits=18, decimal_places=8)
 
 
 class ManualFXOut(ModelSchema):
@@ -38,7 +32,7 @@ class QuoteOut(ModelSchema):
 
     class Meta:
         model = FXRatesCache
-        fields = ['rate', 'fetched_at']
+        fields = ['quote', 'rate', 'fetched_at']
 
 
 class LiveFXOut(ModelSchema):
@@ -50,13 +44,12 @@ class LiveFXOut(ModelSchema):
 
 
 class RefreshLiveFXIn(Schema):
-    base: str
-    quotes: List[str]
+    base: Currency
+    quotes: List[Currency] = Field(min_length=1)
 
 
 class CacheStatusOut(Schema):
     provider: str
     last_refresh_at: datetime
     stale_after_hours: int
-    status: Status
-
+    status: FXProviderStatus

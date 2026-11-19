@@ -1,12 +1,15 @@
-from ninja import Router
+from ninja import Query, Router
 
 from common.access import requires
+from common.enums import ExportModule
+from import_export.schemas import ExportOptions
 
-router = Router(tags=['K3. Export'])
+router = Router(tags=['K2. Export'])
 
-@router.get('')
+
+@router.get('/{module}')
 @requires('data.export')
-def placeholder(request):
+def export_module(request, module: ExportModule, options: Query[ExportOptions]):
     """
-
+    Downloads a module's records as CSV or PDF, matching the filters, with totals where relevant.
     """

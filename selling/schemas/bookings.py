@@ -1,69 +1,82 @@
 import uuid
 from datetime import datetime
-from enum import Enum
-from typing import Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
-from ninja import ModelSchema, Schema
+from ninja import FilterSchema, Schema
+from pydantic import Field
 
-from catalogs.schemas.cancellation_policies import MoneyOut
-from selling.models import Booking
-
-
-class BookingStatus(str, Enum):
-    ACTIVE = 'active'
-    CANCELLED = 'cancelled'
-
-class OccupancyMode(str, Enum):
-    TWO_PAX = '2-pax'
-    SINGLE = 'single'
+from common.enums import BookingStatus, CancellationChargeType, Occupancy
+from common.schemas import Money, NonEmptyStr, OptionalStr
 
 
-class BookingOut(ModelSchema):
-    status: BookingStatus
-
-    class Meta:
-        model = Booking
-        fields = '__all__'
-        exclude = ['created_at', 'updated_at', 'idempotency_key', 'status']
+# -- Requests
 
 class BookingInFromHold(Schema):
+    """Converts one of the signed-in user's active holds into a booking."""
     mode: Literal['from_hold']
-    hold: uuid.UUID
-    occupancy_mode: OccupancyMode
-    acknowledge_policy: bool
-    notes: Optional[str] = None
+    hold_id: uuid.UUID
+    occupancy: Occupancy
+    acknowledge_policy: bool = Field(description='The seller confirmed the cancellation policy with the client')
+    notes: OptionalStr = None
+
 
 class BookingInDirect(Schema):
+    """Books a free cabin without holding it first."""
     mode: Literal['direct']
-    sailing: uuid.UUID
-    cabin: uuid.UUID
-    uc_ref: str
-    occupancy_mode: OccupancyMode
-    acknowledge_policy: bool
-    notes: Optional[str] = None
+    sailing_id: uuid.UUID
+    cabin_id: uuid.UUID
+    uc_ref: NonEmptyStr
+    occupancy: Occupancy
+    acknowledge_policy: bool = Field(description='The seller confirmed the cancellation policy with the client')
+    notes: OptionalStr = None
+
+
+class BookingFilter(FilterSchema):
+    sailing_id: Optional[uuid.UUID] = None
+    cabin_id: Optional[uuid.UUID] = None
+    user_id: Optional[uuid.UUID] = None
+    status: Optional[BookingStatus] = None
+    uc_ref: Optional[str] = None
+
 
 class CancellationQuoteIn(Schema):
-    policy: uuid.UUID
+    cancellation_policy_id: uuid.UUID
 
-class CancellationQuoteOut(Schema):
-    booking: uuid.UUID
-    policy: uuid.UUID
-    tier: uuid.UUID
-    days_out: uuid.UUID
-    charge: MoneyOut
-    calculation: Dict
-    clamped: bool
 
 class CancellationIn(Schema):
-    policy: uuid.UUID
-    charge: MoneyOut
-    reason: Optional[str] = None
+    cancellation_policy_id: uuid.UUID
+    charge: Money = Field(description='The amount the seller entered; must match the quote')
+    reason: OptionalStr = None
 
-class CancellationOut(ModelSchema):
+
+# -- Responses
+
+class BookingOut(Schema):
+    id: uuid.UUID
+    sailing_id: uuid.UUID
+    cabin_id: uuid.UUID
+    user_id: uuid.UUID
+    uc_ref: str
     status: BookingStatus
+    snapshot: Dict[str, Any] = Field(
+        description='The pricing inputs at the time of booking: base, custom costs, margin, discount and FX mode',
+    )
+    created_at: datetime
+
+
+class CancellationQuoteOut(Schema):
+    booking_id: uuid.UUID
+    cancellation_policy_id: uuid.UUID
+    tier_id: uuid.UUID
+    days_out: int
+    charge_type: CancellationChargeType
+    charge: Money
+    calculation: Dict[str, Any] = Field(description='The inputs and steps of the tier calculation, for the audit log')
+    clamped: bool = Field(description='The charge was limited to the booking total')
+
+
+class CancellationOut(Schema):
+    id: uuid.UUID
+    status: BookingStatus
+    charge: Money
     cancelled_at: datetime
-
-    class Meta:
-        model = Booking
-        fields = ['id']
-

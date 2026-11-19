@@ -37,18 +37,28 @@ class APIBaseError(HttpError):
 
 class SeasonOverlapError(APIBaseError):
     type = "SEASON_OVERLAP"
+    title = "Seasons may not overlap"
+    status = 409
 
 class SailingOverlapError(APIBaseError):
     type = "SAILING_OVERLAP"
+    title = "This ship already has a sailing on these dates"
+    status = 409
 
 class CabinAlreadyBookedError(APIBaseError):
     type = "CABIN_ALREADY_BOOKED"
+    title = "Cabin already booked"
+    status = 409
 
 class ActiveHoldExistsError(APIBaseError):
     type = "HOLD_EXISTS"
+    title = "Cabin is held by someone else"
+    status = 409
 
 class FXRatesStaleError(APIBaseError):
     type = "FX_STALE"
+    title = "Live exchange rates are out of date"
+    status = 409
 
 class NotAuthenticatedError(APIBaseError):
     type = "NOT_AUTHENTICATED"
@@ -85,9 +95,13 @@ class ShipArchivedError(APIBaseError):
 
 class RateLimitedError(APIBaseError):
     type = "RATE_LIMITED"
+    title = "Too many attempts"
+    status = 429
 
 class IdempotentReplayError(APIBaseError):
     type = "IDEMPOTENT_REPLAY"
+    title = "Request already processed"
+    status = 409
 
 class APIErrorManager:
     def __init__(self, api):

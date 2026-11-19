@@ -1,33 +1,21 @@
-from enum import Enum
-
 from ninja import ModelSchema, Schema
 
 from catalogs.models import CustomCost
-
-
-class Mode(str, Enum):
-    FIXED = 'fixed'
-    PERCENT = 'percent'
-
-
-class AppliesTo(str, Enum):
-    PER_CABIN = 'per_cabin'
-    PER_PAX = 'per_pax'
+from common.enums import CustomCostAppliesTo, CustomCostMode
 
 
 class CustomCostIn(Schema):
     key: str
     label: str
-    mode: Mode
-    applies_to: AppliesTo
+    mode: CustomCostMode
+    applies_to: CustomCostAppliesTo
     is_active: bool
 
 
 class CustomCostOut(ModelSchema):
-    mode: Mode
-    applies_to: AppliesTo
+    mode: CustomCostMode
+    applies_to: CustomCostAppliesTo
 
     class Meta:
         model = CustomCost
         fields = ['id', 'key', 'label', 'is_active']
-

@@ -2,11 +2,11 @@ from django.conf import settings
 from ninja import Router
 
 from common.access import public
+from common.schemas import MessageOut
 from myauth.schemas import (
     ForgotPasswordIn,
     LoginIn,
     LoginOut,
-    MessageOut,
     ResetPasswordIn,
     TokenOut,
 )

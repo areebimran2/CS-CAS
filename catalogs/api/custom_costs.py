@@ -32,6 +32,14 @@ def create_custom_cost(request, payload: CustomCostIn):
     return service.create_custom_cost(**payload.dict())
 
 
+@router.get('/{cost_id}', response=CustomCostOut)
+@requires('catalogs.view')
+def get_custom_cost(request, cost_id: uuid.UUID):
+    """
+    Returns a custom cost.
+    """
+
+
 @router.put('/{cost_id}', response=CustomCostOut)
 @requires('catalogs.edit')
 def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: uuid.UUID):
@@ -39,3 +47,12 @@ def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: uuid.
     Update an existing cost type.
     """
     return service.update_custom_cost(get_object_or_404(CustomCost, id=cost_id), payload)
+
+
+@router.delete('/{cost_id}', response={204: None})
+@requires('catalogs.delete')
+def delete_custom_cost(request, cost_id: uuid.UUID):
+    """
+    Deletes a custom cost that no ships or cabin pricing use. Otherwise responds 409 `IN_USE`;
+    deactivate it instead.
+    """

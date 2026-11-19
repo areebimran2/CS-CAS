@@ -1,63 +1,66 @@
-from ninja import Router
+import uuid
+from typing import Optional
+
+from ninja import Header, Query, Router
 from ninja_extra import paginate
 from ninja_extra.schemas import NinjaPaginationResponseSchema
 
 from common.access import requires
-from selling.schemas import (
-    HoldExtensionOut,
-    HoldIn,
-    HoldOut,
-    HoldReleaseOut,
-    ReasonIn,
-    ReleaseRequestOut,
-)
+from common.schemas import ReasonIn
+from selling.schemas import HoldFilter, HoldIn, HoldOut, ReleaseRequestOut
 
-router = Router(tags=['I2. Reserve'])
+router = Router(tags=['I2. Holds'])
+
 
 @router.get('', response=NinjaPaginationResponseSchema[HoldOut])
 @requires('selling.view')
 @paginate()
-def list_holds(request):
+def list_holds(request, filters: Query[HoldFilter]):
     """
-    Returns a list of holds.
+    Returns holds, newest first, filtered by sailing, cabin, holder, status or UC Ref.
     """
 
-@router.get('/{hold_id}', response=HoldOut)
-@requires('selling.view')
-def get_hold(request, hold_id):
-    """
-    Returns a single holds details.
-    """
 
 @router.post('', response=HoldOut)
 @requires('selling.reserve')
-def create_hold(request, payload: HoldIn):
+def create_hold(request, payload: HoldIn,
+                idempotency_key: Optional[str] = Header(default=None, alias='Idempotency-Key')):
     """
-    Creates a new hold (reserve a cabin) with an expiry computed from the reserve policy (reserve_settings).
+    Reserves a cabin on a sailing. The expiry comes from the reserve settings, and reminder emails are scheduled before
+    it. Responds 409 `HOLD_EXISTS` when someone else holds the cabin (request a release instead) and 409
+    `CABIN_BOOKED` when it's booked. Repeating a request with the same `Idempotency-Key` returns the first hold.
     """
 
-@router.post('/{hold_id}/extend', response=HoldExtensionOut)
+
+@router.get('/{hold_id}', response=HoldOut)
+@requires('selling.view')
+def get_hold(request, hold_id: uuid.UUID):
+    """
+    Returns a hold.
+    """
+
+
+@router.post('/{hold_id}/extend', response=HoldOut)
 @requires('selling.reserve')
-def extend_hold(request, hold_id):
+def extend_hold(request, hold_id: uuid.UUID):
     """
-    Extends a cabin hold expiry if the global reserve policy (reserve_settings) permits extensions.
-
-    Returns the updated cabin hold.
+    Extends an active hold by the reserve settings' extension time, if extensions are allowed and the hold hasn't
+    used them all.
     """
 
-@router.post('/{hold_id}/release', response=HoldReleaseOut)
+
+@router.post('/{hold_id}/release', response=HoldOut)
 @requires('selling.reserve')
-def release_hold(request, hold_id):
+def release_hold(request, hold_id: uuid.UUID):
     """
-    Releases a cabin hold early (freeing the cabin).
-
-    Note: supports "owner releases" and admin releases
+    Releases an active hold early, freeing the cabin. Holders release their own holds; admins can release any.
     """
 
-@router.post('/{hold_id}/release=request', response=ReleaseRequestOut)
+
+@router.post('/{hold_id}/release-request', response=ReleaseRequestOut)
 @requires('selling.reserve')
-def release_request_hold(request, payload: ReasonIn, hold_id):
+def create_release_request(request, payload: ReasonIn, hold_id: uuid.UUID):
     """
-    Creates a release request when a cabin is held by another user. In other words, allows other users to request
-    release from the holder.
+    Asks the holder to release a hold on a cabin the signed-in user wants. The holder is notified and can approve or
+    deny it under `/api/release-requests`.
     """

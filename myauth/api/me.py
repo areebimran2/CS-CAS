@@ -1,13 +1,13 @@
 from ninja import Router
 
 from common.access import authenticated
+from common.schemas import MessageOut
 from myauth.schemas import (
     AuthPurpose,
     ChangeEmailIn,
     ChangePasswordIn,
     ChangePhoneIn,
     ChangeTFAMethodIn,
-    MessageOut,
     SecuritySetupIn,
     UserProfileSchema,
     UserProfileUpdateSchema,
@@ -30,7 +30,7 @@ router = Router(tags=['A2. My Profile'])
 
 @router.get('', response=UserProfileSchema)
 @authenticated
-def profile(request):
+def get_my_profile(request):
     """
     Retrieve the authenticated user's profile information, including preferences.
     """
@@ -39,7 +39,7 @@ def profile(request):
 
 @router.put('', response=UserProfileSchema)
 @authenticated
-def update_profile(request, data: UserProfileUpdateSchema):
+def update_my_profile(request, data: UserProfileUpdateSchema):
     """
     Update the authenticated user's profile information, including preferences.
     """
@@ -49,7 +49,7 @@ def update_profile(request, data: UserProfileUpdateSchema):
 
 @router.post('/security/sms/send', response=MessageOut)
 @authenticated
-def secure_action(request, data: SecuritySetupIn):
+def send_security_sms(request, data: SecuritySetupIn):
     """
     Send an OTP SMS to the user's registered phone number for security-sensitive actions.
     """
@@ -85,7 +85,7 @@ def verify_new_phone(request, data: VerifySchema, purpose: AuthPurpose = AuthPur
 
 @router.post('/password/change', response=MessageOut)
 @authenticated
-def password_change(request, data: ChangePasswordIn, purpose: AuthPurpose = AuthPurpose.CHANGE_PASSWORD):
+def change_password(request, data: ChangePasswordIn, purpose: AuthPurpose = AuthPurpose.CHANGE_PASSWORD):
     """
     Change the authenticated user's password after verifying the current password and OTP.
     """
@@ -94,7 +94,7 @@ def password_change(request, data: ChangePasswordIn, purpose: AuthPurpose = Auth
 
 @router.post('/email/change', response=MessageOut)
 @authenticated
-def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpose.CHANGE_EMAIL):
+def change_email(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpose.CHANGE_EMAIL):
     """
     Change the authenticated user's email after verifying the OTP.
     """
@@ -103,7 +103,7 @@ def email_change(request, data: ChangeEmailIn, purpose: AuthPurpose = AuthPurpos
 
 @router.post('/tfa-method/change', response=MessageOut)
 @authenticated
-def tfa_method_change(request, data: ChangeTFAMethodIn, purpose: AuthPurpose = AuthPurpose.CHANGE_TFA_METHOD):
+def change_tfa_method(request, data: ChangeTFAMethodIn, purpose: AuthPurpose = AuthPurpose.CHANGE_TFA_METHOD):
     """
     Change the authenticated user's two-factor authentication (TFA) method after verifying the OTP.
     """

@@ -1,34 +1,33 @@
-from ninja import Router
-from ninja_extra import paginate
+from ninja import Query, Router
 
 from common.access import requires
-from pricing.schemas import PricingGraphOut, PricingListOut
+from pricing.schemas import PricingBulkIn, PricingBulkOut, PricingGraphOut, PricingLinesOut, PricingScope
 
-router = Router(tags=['G1. Scope, View, Bulk, Margins & FX'])
+router = Router(tags=['G1. Pricing'])
+
 
 @router.get('/graph', response=PricingGraphOut)
 @requires('pricing.view')
-def get_pricing_graph(request, season_id, ship_id, sailing_ids, fx_mode, occupancy):
+def get_pricing_graph(request, scope: Query[PricingScope]):
     """
-    Pricing Interactive Graph view for a selected scope.
-
-    This returns a grid/coverage-oriented pricing breakdown.
+    The interactive graph view: every cabin on each selected sailing with its pricing status (priced, unpriced,
+    review, overridden, archived) and coverage counts.
     """
 
-@router.get('/lines', response=PricingListOut)
+
+@router.get('/lines', response=PricingLinesOut)
 @requires('pricing.view')
-@paginate()
-def get_pricing_list(request, season_id, ship_id, sailing_ids, fx_mode, occupancy):
+def get_pricing_lines(request, scope: Query[PricingScope]):
     """
-    Pricing List view for a selected scope.
-
-    This returns paginated cabin line items.
+    The list view: each cabin on each selected sailing with its full price breakdown, plus cost of sale and B2B/B2C
+    sales totals for 2-pax or single occupancy.
     """
 
-@router.post('/bulk')
+
+@router.post('/bulk', response=PricingBulkOut)
 @requires('pricing.edit')
-def pricing_bulk(request):
+def set_bulk_pricing(request, payload: PricingBulkIn):
     """
-    Bulk set pricing inputs (base/currency/single multiplier/custom costs) for a target set: Category / Deck /
-    selected Cabins, and apply across the selected Sailing
+    Sets the base cost per passenger, currency, single multiplier and custom costs for the targeted cabins (by
+    category, deck or selection) on each selected sailing. Per-cabin overrides are kept.
     """

@@ -1,3 +1,8 @@
+"""
+Groups and descriptions for the API docs (/api/docs). Every router's tag must appear in TAG_GROUPS;
+common/tests/test_api_structure.py checks this. Tags are named "<spec section><n>. <resource>".
+"""
+
 SESSION_TAG_DESC = """
 Relates all endpoints pertaining to sign-in and logged-in user sessions. This includes login flow,
 reset password flow, and session authentication.
@@ -28,7 +33,7 @@ TAG_GROUPS = [
      "tags": ["C1. Amenities",
               "C2. Cabin Categories",
               "C3. Custom Costs",
-              "C4. FX",
+              "C4. Exchange Rates",
               "C5. Reserve Settings",
               "C6. Cancellation Policies"]},
     {"name": "D. Ships, Cabins & Interactive Cabin Maps",
@@ -36,28 +41,36 @@ TAG_GROUPS = [
               "D2. Cabin Maps",
               "D3. Cabins"]},
     {"name": "E. Routes (Google Places)",
-     "tags": ["E1. Route",
-              "E2. Place"]},
+     "tags": ["E1. Routes",
+              "E2. Places"]},
     {"name": "F. Seasons & Sailings",
-     "tags": ["F1. Season",
-              "F2. Sailing"]},
+     "tags": ["F1. Seasons",
+              "F2. Sailings"]},
     {"name": "G. Pricing (Cost of Ship by Season/Sailing)",
-     "tags": ["G1. Scope, View, Bulk, Margins & FX",
-              "G2. Sailing-scoped Cabin Pricing"]},
+     "tags": ["G1. Pricing",
+              "G2. Sailing Overrides",
+              "G3. Ship Custom Costs"]},
     {"name": "H. List Pricing (Totals & Drill-down)",
      "tags": ["H1. List Pricing"]},
-    {"name": "I. Sell / Reserve / Book",
+    {"name": "I. Sell / Reserve / Book (Zoho UC Ref)",
      "tags": ["I1. UC Ref Lookup",
-              "I2. Reserve",
-              "I3 + I4. Booking",
-              "I5. Release Request (against a Hold)"]},
+              "I2. Holds",
+              "I3. Bookings & Cancellations",
+              "I5. Release Requests"]},
     {"name": "J. Discounts & Flash Sales",
      "tags": ["J1. Discounts"]},
     {"name": "K. Import / Export",
-     "tags": ["K1. Templates",
-              "K2. Import",
-              "K3. Export"]},
-    {"name": "L. Reports & Analytics", "tags": ["L. Reports & Analytics"]},
+     "tags": ["K1. Import",
+              "K2. Export"]},
+    {"name": "L. Reports & Analytics",
+     "tags": ["L1. Reports",
+              "L2. Report Schedules"]},
+    {"name": "M. Dashboard",
+     "tags": ["M2. Dashboard Layout"]},
+    {"name": "N. Notifications",
+     "tags": ["N1. Browser Push"]},
+    {"name": "Q. Audit History",
+     "tags": ["Q1. Audit Log"]},
 ]
 
 TAGS = [

@@ -12,6 +12,7 @@ from ships_cabins.models import Ship, ShipPhoto
 from ships_cabins.schemas import (
     ListPhotoOut,
     PhotoUploadUrlsIn,
+    PhotoUploadUrlsOut,
     ReorderPhotoIn,
     ShipDetailOut,
     ShipFilter,
@@ -95,19 +96,19 @@ def delete_ship(request, ship_id: uuid.UUID):
 
 # -- Photo gallery
 
-@router.post('/{ship_id}/photos/upload-urls')
+@router.post('/{ship_id}/photos/upload-urls', response=PhotoUploadUrlsOut)
 @requires('ships.edit')
-def upload_ship_photo_urls(request, ship_id: uuid.UUID, payload: PhotoUploadUrlsIn):
+def create_ship_photo_upload_urls(request, payload: PhotoUploadUrlsIn, ship_id: uuid.UUID):
     """
-    Generate presigned URLs for the client to upload photos directly to object storage.
+    Returns presigned URLs for uploading photos (JPG, PNG, SVG or WEBP) directly to storage.
     """
 
 
 @router.post('/{ship_id}/photos', response=ListPhotoOut)
 @requires('ships.edit')
-def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id: uuid.UUID):
+def upload_ship_photos(request, files: File[List[UploadedFile]], ship_id: uuid.UUID):
     """
-    Upload a photo to the ship gallery.
+    Uploads photos to the ship's gallery.
     """
     return {'photos': service.add_ship_photos(get_object_or_404(Ship, id=ship_id), files)}
 
@@ -116,7 +117,7 @@ def upload_ship_photo(request, files: File[List[UploadedFile]], ship_id: uuid.UU
 @requires('ships.edit')
 def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id: uuid.UUID):
     """
-    Update the sort order of the ships' gallery.
+    Sets the order of the ship's gallery. Photos not listed keep their position.
     """
     sort_orders = {item.id: item.sort_order for item in payload.order}
     return {'photos': service.reorder_ship_photos(get_object_or_404(Ship, id=ship_id), sort_orders)}
@@ -126,7 +127,7 @@ def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id: uuid.UUID):
 @requires('ships.edit')
 def delete_ship_photo(request, photo_id: uuid.UUID, ship_id: uuid.UUID):
     """
-    Remove a specific photo from the ship gallery.
+    Removes a photo from the ship's gallery.
     """
     service.delete_ship_photo(get_object_or_404(ShipPhoto, ship_id=ship_id, id=photo_id))
     return Status(204, None)

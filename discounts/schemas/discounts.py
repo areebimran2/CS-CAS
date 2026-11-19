@@ -1,79 +1,60 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
-from typing import List, Literal, Optional
+from typing import Annotated, List, Optional
 
-from ninja import ModelSchema, Schema
+from ninja import FilterSchema, Schema
+from ninja.filter_schema import FilterLookup
 from pydantic import Field
 
-from discounts.models import Discount, DiscountTarget
+from common.enums import DiscountKind, DiscountStatus, DiscountTargetKind, SalesChannel
+from common.schemas import NonEmptyStr
+
+MarginFloor = Annotated[Decimal, Field(ge=0, max_digits=6, decimal_places=4, description='0.05 means 5%')]
 
 
-class DiscountKind(str, Enum):
-    PERCENT = 'percent'
-    FIXED = 'fixed'
-
-class DiscountChannel(str, Enum):
-    B2B = 'b2b'
-    B2C = 'b2c'
-    BOTH = 'both'
-
-class DiscountStatus(str, Enum):
-    SCHEDULED = 'scheduled'
-    ACTIVE = 'active'
-    ENDED = 'ended'
-    CANCELLED = 'cancelled'
-
-class DiscountTargetKind(str, Enum):
-    SAILING = 'sailing'
-    CATEGORY = 'category'
-    CABIN = 'cabin'
-
-class DiscountTargetOut(ModelSchema):
-    target_kind: DiscountTargetKind
-
-    class Meta:
-        model = DiscountTarget
-        fields = ['sailing', 'category', 'cabin']
-
-class DiscountOut(ModelSchema):
-    targets: List[DiscountTargetOut]
-    kind: DiscountKind
-    channel: DiscountChannel
-    status: DiscountStatus
-
-    class Meta:
-        model = Discount
-        fields = '__all__'
-        exclude = ['created_at', 'kind', 'channel', 'status']
+# -- Requests
 
 class DiscountTargetIn(Schema):
     target_kind: DiscountTargetKind
-    id: uuid.UUID
+    target_id: uuid.UUID = Field(description='The id of the sailing, cabin category or cabin')
+
 
 class DiscountIn(Schema):
-    name: str
+    name: NonEmptyStr
     kind: DiscountKind
-    value: Decimal = Field(max_digits=10, decimal_places=4)
-    channel: DiscountChannel
+    value: Decimal = Field(gt=0, max_digits=10, decimal_places=4, description='0.20 means 20% for percent discounts')
+    channel: SalesChannel = SalesChannel.BOTH
     starts_at: datetime
     ends_at: datetime
-    min_margin_b2b: Optional[Decimal] = Field(max_digits=6, decimal_places=4)
-    max_margin_b2c: Optional[Decimal] = Field(max_digits=6, decimal_places=4)
-    targets: List[DiscountTargetIn]
+    min_margin_b2b: MarginFloor = Decimal('0.05')
+    min_margin_b2c: MarginFloor = Decimal('0.10')
+    targets: List[DiscountTargetIn] = Field(min_length=1, description='The most specific target wins: cabin, '
+                                                                     'then category, then sailing')
 
-class DiscountActivateOut(ModelSchema):
-    status: Literal[DiscountStatus.ACTIVE]
 
-    class Meta:
-        model = Discount
-        fields = ['id']
+class DiscountFilter(FilterSchema):
+    status: Annotated[Optional[List[DiscountStatus]], FilterLookup('status__in')] = None
+    channel: Optional[SalesChannel] = None
+    search: Annotated[Optional[str], FilterLookup('name__icontains')] = None
 
-class DiscountDeactivateOut(ModelSchema):
-    status: Literal[DiscountStatus.CANCELLED]
 
-    class Meta:
-        model = Discount
-        fields = ['id']
+# -- Responses
 
+class DiscountTargetOut(Schema):
+    target_kind: DiscountTargetKind
+    target_id: uuid.UUID
+
+
+class DiscountOut(Schema):
+    id: uuid.UUID
+    name: str
+    kind: DiscountKind
+    value: Decimal
+    channel: SalesChannel
+    starts_at: datetime
+    ends_at: datetime
+    min_margin_b2b: Decimal
+    min_margin_b2c: Decimal
+    status: DiscountStatus
+    targets: List[DiscountTargetOut]

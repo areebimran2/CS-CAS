@@ -32,6 +32,14 @@ def create_amenity(request, payload: AmenityIn):
     return service.create_amenity(**payload.dict())
 
 
+@router.get('/{amenity_id}', response=AmenityOut)
+@requires('catalogs.view')
+def get_amenity(request, amenity_id: uuid.UUID):
+    """
+    Returns an amenity.
+    """
+
+
 @router.put('/{amenity_id}', response=AmenityOut)
 @requires('catalogs.edit')
 def update_amenity(request, payload: PatchDict[AmenityIn], amenity_id: uuid.UUID):
@@ -40,3 +48,12 @@ def update_amenity(request, payload: PatchDict[AmenityIn], amenity_id: uuid.UUID
     """
     amenity = get_object_or_404(Amenity, id=amenity_id)
     return service.update_amenity(amenity, payload)
+
+
+@router.delete('/{amenity_id}', response={204: None})
+@requires('catalogs.delete')
+def delete_amenity(request, amenity_id: uuid.UUID):
+    """
+    Deletes an amenity that no ships use. Otherwise responds 409 `IN_USE`;
+    deactivate it instead.
+    """

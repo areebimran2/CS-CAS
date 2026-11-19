@@ -1,10 +1,9 @@
 from typing import List, Optional
 
 from ninja import ModelSchema, Schema
-from ninja_extra import status
 from pydantic import model_validator
 
-from common.exceptions import APIBaseError
+from common.exceptions import ValidationFailedError
 from myadmin.models import Permission, Role
 
 
@@ -14,17 +13,15 @@ class RoleIn(Schema):
     permissions: List[str]
 
     @model_validator(mode='after')
-    def permissions_exists(self):
+    def permissions_exist(self):
         if self.permissions is None:  # partial update (PatchDict) that doesn't change the permissions
             return self
         existing = set(Permission.objects.filter(key__in=self.permissions).values_list('key', flat=True))
-        missing = set(self.permissions) - existing
+        missing = sorted(set(self.permissions) - existing)
         if missing:
-            raise APIBaseError(
-                title='Invalid permissions',
+            raise ValidationFailedError(
                 detail='One or more permissions are invalid',
-                status=status.HTTP_400_BAD_REQUEST,
-                errors=[{'field': key, 'message': 'No permission with this key'} for key in missing],
+                errors=[{'field': 'permissions', 'message': f'No permission with key {key}'} for key in missing],
             )
         return self
 
@@ -39,4 +36,3 @@ class RoleOut(ModelSchema):
     @staticmethod
     def resolve_permissions(obj):
         return obj.permissions.values_list('key', flat=True)
-

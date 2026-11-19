@@ -1,20 +1,15 @@
 import uuid
-from enum import Enum
 from typing import List, Optional
 
 from django.contrib.auth import get_user_model
 from ninja import ModelSchema, Schema
-from ninja_extra import status
 from pydantic import EmailStr, model_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
-from common.exceptions import APIBaseError
+from common.enums import UserStatus
+from common.exceptions import ValidationFailedError
 from myadmin.models import Role
 
-
-class Status(str, Enum):
-    ACTIVE = 'active'
-    SUSPENDED = 'suspended'
 
 class UserIn(Schema):
     first_name: str
@@ -30,12 +25,7 @@ class UserIn(Schema):
     def validate_role(self):
         # role_id is None only in partial updates (PatchDict) that don't change the role
         if self.role_id is not None and not Role.objects.filter(id=self.role_id).exists():
-            raise APIBaseError(
-                title='Invalid role',
-                detail='The specified role does not exist',
-                status=status.HTTP_400_BAD_REQUEST,
-                errors=[{'field': 'role_id', 'message': 'No role with this ID'}],
-            )
+            raise ValidationFailedError(errors=[{'field': 'role_id', 'message': 'No role with this id'}])
         return self
 
 
@@ -47,7 +37,7 @@ class UserRoleSchema(ModelSchema):
 
 class UserOut(ModelSchema):
     roles: List[UserRoleSchema]  # Reverse reference to roles
-    status: Status
+    status: UserStatus
 
     class Meta:
         model = get_user_model()
@@ -56,8 +46,3 @@ class UserOut(ModelSchema):
     @staticmethod
     def resolve_phone(obj):
         return str(obj.phone)
-
-
-class MessageIn(Schema):
-    text: Optional[str] = None
-

@@ -11,7 +11,7 @@ class ApiClient(Client):
     """
     Django's test client, signed in as `user` when one is given, and sending JSON bodies by default:
 
-        ApiClient(user).post('/api/routes/', {'name': 'Adriatic', 'legs': [...]})
+        ApiClient(user).post('/api/routes', {'name': 'Adriatic', 'legs': [...]})
     """
 
     def __init__(self, user=None, **kwargs):

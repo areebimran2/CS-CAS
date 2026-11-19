@@ -1,4 +1,3 @@
-import uuid
 from typing import List, Optional
 
 from ninja import ModelSchema, Schema
@@ -13,6 +12,7 @@ class RouteLegOut(ModelSchema):
         fields = '__all__'
         exclude = ['route']
 
+
 class RouteOut(ModelSchema):
     leg_count: int
 
@@ -24,6 +24,7 @@ class RouteOut(ModelSchema):
     @staticmethod
     def resolve_leg_count(obj):
         return obj.routeleg_set.count()
+
 
 class RouteOutWithLegs(ModelSchema):
     legs: List[RouteLegOut]
@@ -45,17 +46,8 @@ class RouteLegIn(Schema):
     lng: Longitude
     tz: Optional[str] = None
 
+
 class RouteIn(Schema):
     name: Optional[str] = None
     notes: Optional[str] = None
     legs: List[RouteLegIn]
-
-class RouteLegUpdateIn(Schema):
-    place: uuid.UUID
-    lat: Latitude
-    lng: Longitude
-    tz: Optional[str] = None
-
-class RouteLegReorderIn(Schema):
-    order: List[uuid.UUID]
-

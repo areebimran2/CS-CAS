@@ -18,8 +18,8 @@ def suite(db):
     return CabinCategory.objects.get(name='Suite')  # seeded by catalogs/migrations/0002_seed_data.py
 
 
-def cabins_url(ship, suffix=''):
-    return f'/api/ships/{ship.id}/cabins/{suffix}'
+def cabins_url(ship, *path):
+    return '/'.join([f'/api/ships/{ship.id}/cabins', *map(str, path)])
 
 
 def cabin(number, category, **fields):
@@ -106,7 +106,7 @@ def test_list_filters(superuser_client, ship, suite):
     add_cabin(ship, '4', balcony, deck='Lower', is_archived=True)
 
     def numbers(query):
-        return [c['number'] for c in superuser_client.get(cabins_url(ship, query)).json()['items']]
+        return [c['number'] for c in superuser_client.get(cabins_url(ship) + query).json()['items']]
 
     assert numbers('?deck=Main') == ['1', '2']
     assert numbers(f'?category_id={balcony.id}') == ['2', '3']
