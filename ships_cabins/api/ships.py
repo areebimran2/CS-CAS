@@ -62,7 +62,8 @@ def replace_ship(request, payload: ShipIn, ship_id: uuid.UUID):
     Replaces a ship's details, currencies and amenities. Send the complete ship: optional fields that are left out
     are cleared.
     """
-    return service.replace_ship(get_object_or_404(Ship, id=ship_id), **payload.dict())
+    ship = get_object_or_404(Ship, id=ship_id)
+    return service.replace_ship(ship, **payload.dict())
 
 
 @router.post('/{ship_id}/archive', response=ShipOut)
@@ -71,7 +72,8 @@ def archive_ship(request, ship_id: uuid.UUID):
     """
     Archives a ship, which hides it from the default ship list. Its cabins and history are kept.
     """
-    return service.set_ship_archived(get_object_or_404(Ship, id=ship_id), True)
+    ship = get_object_or_404(Ship, id=ship_id)
+    return service.set_ship_archived(ship, True)
 
 
 @router.post('/{ship_id}/unarchive', response=ShipOut)
@@ -80,7 +82,8 @@ def unarchive_ship(request, ship_id: uuid.UUID):
     """
     Restores an archived ship.
     """
-    return service.set_ship_archived(get_object_or_404(Ship, id=ship_id), False)
+    ship = get_object_or_404(Ship, id=ship_id)
+    return service.set_ship_archived(ship, False)
 
 
 @router.delete('/{ship_id}', response={204: None})
@@ -90,7 +93,8 @@ def delete_ship(request, ship_id: uuid.UUID):
     Deletes a ship that nothing refers to: no cabins, cabin maps, seasons, sailings or pricing. Otherwise responds
     409 `IN_USE`; archive the ship instead.
     """
-    service.delete_ship(get_object_or_404(Ship, id=ship_id))
+    ship = get_object_or_404(Ship, id=ship_id)
+    service.delete_ship(ship)
     return Status(204, None)
 
 
@@ -110,7 +114,8 @@ def upload_ship_photos(request, files: File[List[UploadedFile]], ship_id: uuid.U
     """
     Uploads photos to the ship's gallery.
     """
-    return {'photos': service.add_ship_photos(get_object_or_404(Ship, id=ship_id), files)}
+    ship = get_object_or_404(Ship, id=ship_id)
+    return {'photos': service.add_ship_photos(ship, files)}
 
 
 @router.post('/{ship_id}/photos/reorder', response=ListPhotoOut)
@@ -119,8 +124,9 @@ def reorder_ship_photos(request, payload: ReorderPhotoIn, ship_id: uuid.UUID):
     """
     Sets the order of the ship's gallery. Photos not listed keep their position.
     """
+    ship = get_object_or_404(Ship, id=ship_id)
     sort_orders = {item.id: item.sort_order for item in payload.order}
-    return {'photos': service.reorder_ship_photos(get_object_or_404(Ship, id=ship_id), sort_orders)}
+    return {'photos': service.reorder_ship_photos(ship, sort_orders)}
 
 
 @router.delete('/{ship_id}/photos/{photo_id}', response={204: None})
@@ -129,5 +135,6 @@ def delete_ship_photo(request, photo_id: uuid.UUID, ship_id: uuid.UUID):
     """
     Removes a photo from the ship's gallery.
     """
-    service.delete_ship_photo(get_object_or_404(ShipPhoto, ship_id=ship_id, id=photo_id))
+    ship_photo = get_object_or_404(ShipPhoto, ship_id=ship_id, id=photo_id)
+    service.delete_ship_photo(ship_photo)
     return Status(204, None)

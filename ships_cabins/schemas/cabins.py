@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated, Optional, List
 
 from ninja import Schema
 from ninja.filter_schema import FilterLookup
@@ -19,12 +19,12 @@ class CabinIn(Schema):
 
 
 class CabinBulkIn(Schema):
-    cabins: list[CabinIn] = Field(min_length=1, max_length=500)
+    cabins: List[CabinIn] = Field(min_length=1, max_length=500)
 
 
 class CabinFilter(ArchivedFilter):
     deck: Optional[str] = None
-    category_id: Annotated[Optional[list[uuid.UUID]], FilterLookup('category_id__in')] = None
+    category_id: Annotated[Optional[List[uuid.UUID]], FilterLookup('category_id__in')] = None
     search: Annotated[Optional[str], FilterLookup(['number__icontains', 'name__icontains'])] = None
 
 

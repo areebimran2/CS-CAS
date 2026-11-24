@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Optional
+from typing import List, Annotated, Optional
 
 from ninja import ModelSchema, Schema
 from ninja.filter_schema import FilterLookup
@@ -29,9 +29,9 @@ class ShipIn(Schema):
     operator: OptionalStr = None
     contact_person: OptionalStr = None
     address: Optional[Address] = None
-    currencies: list[Currency] = Field(min_length=1)
-    amenity_ids: list[uuid.UUID] = []
-    new_amenities: list[NonEmptyStr] = Field(default=[], description='Names to add to the amenity master list')
+    currencies: List[Currency] = Field(min_length=1)
+    amenity_ids: List[uuid.UUID] = []
+    new_amenities: List[NonEmptyStr] = Field(default=[], description='Names to add to the amenity master list')
 
     @field_validator('currencies', 'amenity_ids', 'new_amenities')
     @classmethod
@@ -49,7 +49,7 @@ class PhotoIn(Schema):
 
 
 class ReorderPhotoIn(Schema):
-    order: list[PhotoIn]
+    order: List[PhotoIn]
 
 
 class UploadFileIn(Schema):
@@ -58,7 +58,7 @@ class UploadFileIn(Schema):
 
 
 class PhotoUploadUrlsIn(Schema):
-    files: list[UploadFileIn]
+    files: List[UploadFileIn]
 
 
 # -- Responses
@@ -76,14 +76,14 @@ class PhotoOut(ModelSchema):
 
 
 class ListPhotoOut(Schema):
-    photos: list[PhotoOut]
+    photos: List[PhotoOut]
 
 
 class ShipOut(ModelSchema):
     address: Optional[Address] = None
-    currencies: list[Currency]
-    amenities: list[AmenityOut]
-    photos: list[PhotoOut]
+    currencies: List[Currency]
+    amenities: List[AmenityOut]
+    photos: List[PhotoOut]
 
     class Meta:
         model = Ship
@@ -91,7 +91,7 @@ class ShipOut(ModelSchema):
 
     @staticmethod
     def resolve_currencies(ship):
-        return [row.currency for row in ship.shipcurrency_set.all()]
+        return ship.shipcurrency_set.values_list('currency', flat=True)
 
     @staticmethod
     def resolve_photos(ship):
@@ -106,7 +106,7 @@ class ShipDetailOut(ShipOut):
 
 class ShipListOut(ModelSchema):
     """Read from services.ships.ships_with_summary(), which adds the counts in the same query."""
-    currencies: list[Currency]
+    currencies: List[Currency]
     amenity_count: int
     cabin_count: int
     photo_count: int
@@ -127,4 +127,4 @@ class UploadFileOut(Schema):
 
 
 class PhotoUploadUrlsOut(Schema):
-    files: list[UploadFileOut]
+    files: List[UploadFileOut]

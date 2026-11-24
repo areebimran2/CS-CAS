@@ -47,7 +47,8 @@ def update_route(request, payload: PatchDict[RouteIn], route_id: uuid.UUID):
     """
     Updates a route. Only the fields sent are changed; sending `legs` replaces all of the route's legs.
     """
-    return service.update_route(get_object_or_404(Route, id=route_id), payload)
+    route = get_object_or_404(Route, id=route_id)
+    return service.update_route(route, payload)
 
 
 @router.delete('/{route_id}', response={204: None})

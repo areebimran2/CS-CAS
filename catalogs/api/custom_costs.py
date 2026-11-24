@@ -46,7 +46,8 @@ def update_custom_cost(request, payload: PatchDict[CustomCostIn], cost_id: uuid.
     """
     Update an existing cost type.
     """
-    return service.update_custom_cost(get_object_or_404(CustomCost, id=cost_id), payload)
+    custom_cost = get_object_or_404(CustomCost, id=cost_id)
+    return service.update_custom_cost(custom_cost, payload)
 
 
 @router.delete('/{cost_id}', response={204: None})

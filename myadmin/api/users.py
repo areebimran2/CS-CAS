@@ -49,7 +49,8 @@ def update_user(request, payload: PatchDict[UserIn], user_id: uuid.UUID):
     """
     Updates a user. Only the fields sent are changed; a new `role_id` replaces the user's role.
     """
-    return service.update_user(get_object_or_404(User, id=user_id), payload)
+    user = get_object_or_404(User, id=user_id)
+    return service.update_user(user, payload)
 
 
 @router.post('/{user_id}/suspend', response=UserOut)

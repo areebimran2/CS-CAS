@@ -18,16 +18,16 @@ class ErrorModel(Schema):
 
 # -- Reusable field types for request schemas
 
+# Text with surrounding spaces removed, which must not be empty.
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
-"""Text with surrounding spaces removed, which must not be empty."""
 
 
 def _blank_to_none(value):
     return (value.strip() or None) if isinstance(value, str) else value
 
 
+# Optional text with surrounding spaces removed. Blank text becomes null.
 OptionalStr = Annotated[Optional[str], BeforeValidator(_blank_to_none)]
-"""Optional text with surrounding spaces removed. Blank text becomes null."""
 
 
 class Money(Schema):

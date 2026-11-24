@@ -47,7 +47,8 @@ def update_role(request, payload: PatchDict[RoleIn], role_id: uuid.UUID):
     """
     Updates a role. Only the fields sent are changed; a `permissions` list replaces all of the role's permissions.
     """
-    return service.update_role(get_object_or_404(Role, id=role_id), payload)
+    role = get_object_or_404(Role, id=role_id)
+    return service.update_role(role, payload)
 
 
 @router.delete('/{role_id}', response={204: None})

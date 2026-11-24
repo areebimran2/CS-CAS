@@ -1,4 +1,5 @@
 import uuid
+from typing import List
 
 from django.shortcuts import get_object_or_404
 from ninja import PatchDict, Path, Query, Router, Status
@@ -12,10 +13,6 @@ from ships_cabins.services import cabins as service
 
 router = Router(tags=['D3. Cabins'])
 
-
-def _get_cabin(ship_id, cabin_id) -> Cabin:
-    """The cabin, or 404 if it doesn't exist or belongs to another ship."""
-    return get_object_or_404(Cabin.objects.select_related('category'), ship_id=ship_id, id=cabin_id)
 
 
 @router.get('', response=NinjaPaginationResponseSchema[CabinOut])
@@ -37,26 +34,29 @@ def create_cabin(request, payload: CabinIn, ship_id: uuid.UUID = Path(...)):
     """
     Creates a cabin. Its number must be unique on the ship, ignoring case.
     """
-    return service.create_cabin(get_object_or_404(Ship, id=ship_id), **payload.dict())
+    ship = get_object_or_404(Ship, id=ship_id)
+    return service.create_cabin(ship, **payload.dict())
 
 
-@router.post('/bulk', response=list[CabinOut])
+@router.post('/bulk', response=List[CabinOut])
 @requires('ships.create')
 def create_cabins(request, payload: CabinBulkIn, ship_id: uuid.UUID = Path(...)):
     """
     Creates up to 500 cabins at once, or none: if any row is invalid, nothing is saved and every problem is listed with
     its row, e.g. `cabins[3].number`.
     """
-    return service.create_cabins(get_object_or_404(Ship, id=ship_id), payload.dict()['cabins'])
+    ship = get_object_or_404(Ship, id=ship_id)
+    return service.create_cabins(ship, payload.dict()['cabins'])
 
 
-@router.get('/decks', response=list[DeckOut])
+@router.get('/decks', response=List[DeckOut])
 @requires('ships.view')
 def list_decks(request, ship_id: uuid.UUID = Path(...)):
     """
     Returns each deck that has current cabins, with how many, so clients can offer the decks already in use.
     """
-    return service.decks(get_object_or_404(Ship, id=ship_id))
+    ship = get_object_or_404(Ship, id=ship_id)
+    return service.decks(ship)
 
 
 @router.get('/{cabin_id}', response=CabinOut)
@@ -65,7 +65,7 @@ def get_cabin(request, cabin_id: uuid.UUID, ship_id: uuid.UUID = Path(...)):
     """
     Returns a cabin.
     """
-    return _get_cabin(ship_id, cabin_id)
+    return get_object_or_404(Cabin.objects.select_related('category'), ship_id=ship_id, id=cabin_id)
 
 
 @router.put('/{cabin_id}', response=CabinOut)
@@ -74,7 +74,8 @@ def update_cabin(request, payload: PatchDict[CabinIn], cabin_id: uuid.UUID, ship
     """
     Updates a cabin. Only the fields sent are changed. A cabin can't move to another ship.
     """
-    return service.update_cabin(_get_cabin(ship_id, cabin_id), payload)
+    cabin = get_object_or_404(Cabin.objects.select_related('category'), ship_id=ship_id, id=cabin_id)
+    return service.update_cabin(cabin, payload)
 
 
 @router.post('/{cabin_id}/archive', response=CabinOut)
@@ -83,7 +84,8 @@ def archive_cabin(request, cabin_id: uuid.UUID, ship_id: uuid.UUID = Path(...)):
     """
     Archives a cabin, which hides it from the default cabin list. Its history is kept.
     """
-    return service.set_cabin_archived(_get_cabin(ship_id, cabin_id), True)
+    cabin = get_object_or_404(Cabin.objects.select_related('category'), ship_id=ship_id, id=cabin_id)
+    return service.set_cabin_archived(cabin, True)
 
 
 @router.post('/{cabin_id}/unarchive', response=CabinOut)
@@ -92,7 +94,8 @@ def unarchive_cabin(request, cabin_id: uuid.UUID, ship_id: uuid.UUID = Path(...)
     """
     Restores an archived cabin.
     """
-    return service.set_cabin_archived(_get_cabin(ship_id, cabin_id), False)
+    cabin = get_object_or_404(Cabin.objects.select_related('category'), ship_id=ship_id, id=cabin_id)
+    return service.set_cabin_archived(cabin, False)
 
 
 @router.delete('/{cabin_id}', response={204: None})
@@ -102,5 +105,6 @@ def delete_cabin(request, cabin_id: uuid.UUID, ship_id: uuid.UUID = Path(...)):
     Deletes a cabin that nothing refers to (cabin maps, pricing, discounts, holds or bookings). Otherwise responds
     409 `IN_USE`; archive the cabin instead.
     """
-    service.delete_cabin(_get_cabin(ship_id, cabin_id))
+    cabin = get_object_or_404(Cabin.objects.select_related('category'), ship_id=ship_id, id=cabin_id)
+    service.delete_cabin(cabin)
     return Status(204, None)
